@@ -148,7 +148,7 @@ pub struct DiceRoll {
 pub struct DiceLog {
     pub pending: VecDeque<DiceRequest>,
     pub resolved: Vec<DiceRoll>,
-    pub next_face: u16,
+    pub next_seed: u32,
 }
 
 #[derive(Debug, Default, Resource)]
@@ -250,7 +250,7 @@ fn setup_world(mut commands: Commands) {
     ));
 
     commands.insert_resource(Ruleset {
-        system: "Bivy Adventure",
+        system: "BTT Adventure",
         actions: vec![
             ActionRule {
                 name: "Strike",
@@ -321,14 +321,23 @@ fn apply_movement_requests(
     mut positions: Query<&mut GridPosition>,
 ) {
     let pending = mem::take(&mut queue.pending);
+    let mut measured_distance = 0;
+    let mut last_selected = selection.selected;
+    let mut moved_any_token = false;
 
     for (entity, destination) in pending {
         if let Ok(mut position) = positions.get_mut(entity) {
-            selection.measured_distance = position.distance_to(destination);
+            measured_distance += position.distance_to(destination);
             *position = destination;
-            selection.selected = Some(entity);
+            last_selected = Some(entity);
+            moved_any_token = true;
             save_state.dirty = true;
         }
+    }
+
+    if moved_any_token {
+        selection.measured_distance = measured_distance;
+        selection.selected = last_selected;
     }
 }
 
@@ -343,11 +352,7 @@ fn resolve_dice_requests(mut dice_log: ResMut<DiceLog>, mut save_state: ResMut<S
             Vec::new()
         } else {
             (0..request.count)
-                .map(|_| {
-                    let roll = (dice_log.next_face % request.sides) + 1;
-                    dice_log.next_face = dice_log.next_face.wrapping_add(1);
-                    roll
-                })
+                .map(|_| roll_die(&mut dice_log.next_seed, request.sides))
                 .collect::<Vec<_>>()
         };
         let total =
@@ -362,6 +367,21 @@ fn resolve_dice_requests(mut dice_log: ResMut<DiceLog>, mut save_state: ResMut<S
     }
 
     save_state.dirty = true;
+}
+
+fn roll_die(next_seed: &mut u32, sides: u16) -> u16 {
+    let sides = u32::from(sides);
+    let limit = u32::MAX - (u32::MAX % sides);
+
+    loop {
+        *next_seed = next_seed
+            .wrapping_mul(1_664_525)
+            .wrapping_add(1_013_904_223);
+
+        if *next_seed < limit {
+            return ((*next_seed % sides) + 1) as u16;
+        }
+    }
 }
 
 #[cfg(test)]
@@ -420,6 +440,24 @@ mod tests {
     }
 
     #[test]
+    fn multiple_queued_moves_accumulate_the_measured_path() {
+        let mut app = build_app();
+        app.update();
+
+        let hero = entity_named(&mut app, "Seren");
+        queue_token_move(&mut app, hero, GridPosition::new(1, 0));
+        queue_token_move(&mut app, hero, GridPosition::new(2, -1));
+
+        app.update();
+
+        let selection = app.world().resource::<SelectionState>();
+        let position = app.world().entity(hero).get::<GridPosition>().unwrap();
+
+        assert_eq!(*position, GridPosition::new(2, -1));
+        assert_eq!(selection.measured_distance, 2);
+    }
+
+    #[test]
     fn queued_dice_rolls_are_resolved_into_history() {
         let mut app = build_app();
         app.update();
@@ -432,7 +470,7 @@ mod tests {
 
         assert_eq!(dice_log.pending.len(), 0);
         assert_eq!(dice_log.resolved.len(), 1);
-        assert_eq!(dice_log.resolved[0].rolls, vec![1, 2]);
-        assert_eq!(dice_log.resolved[0].total, 4);
+        assert_eq!(dice_log.resolved[0].rolls, vec![2, 3]);
+        assert_eq!(dice_log.resolved[0].total, 6);
     }
 }
