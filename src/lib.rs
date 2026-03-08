@@ -1,8 +1,14 @@
 use bevy_app::{App, Plugin, Startup, Update};
 use bevy_ecs::prelude::*;
-use std::{cmp::Reverse, collections::VecDeque, mem};
+use std::{
+    cmp::Reverse,
+    collections::{HashMap, VecDeque},
+    mem,
+};
 
 const MAX_REJECTION_SAMPLING_ATTEMPTS: usize = 8;
+const LCG_MULTIPLIER: u32 = 1_664_525;
+const LCG_INCREMENT: u32 = 1_013_904_223;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Resource)]
 pub enum EnginePhase {
@@ -323,12 +329,12 @@ fn apply_movement_requests(
     mut positions: Query<&mut GridPosition>,
 ) {
     let pending = mem::take(&mut queue.pending);
-    let mut total_distance_traveled = 0;
+    let mut distance_by_entity = HashMap::new();
     let mut moved_entity = None;
 
     for (entity, destination) in pending {
         if let Ok(mut position) = positions.get_mut(entity) {
-            total_distance_traveled += position.distance_to(destination);
+            *distance_by_entity.entry(entity).or_insert(0) += position.distance_to(destination);
             *position = destination;
             moved_entity = Some(entity);
             save_state.dirty = true;
@@ -336,7 +342,7 @@ fn apply_movement_requests(
     }
 
     if let Some(moved_entity) = moved_entity {
-        selection.measured_distance = total_distance_traveled;
+        selection.measured_distance = *distance_by_entity.get(&moved_entity).unwrap_or(&0);
         selection.selected = Some(moved_entity);
     }
 }
@@ -372,6 +378,12 @@ fn resolve_dice_requests(mut dice_log: ResMut<DiceLog>, mut save_state: ResMut<S
     save_state.dirty = true;
 }
 
+/// Generates a deterministic but unbiased die roll for tests and headless engine bootstrap flows.
+///
+/// The linear congruential generator keeps the implementation dependency-free, while rejection
+/// sampling avoids modulo bias for die sizes that do not evenly divide the generator range.
+/// The retry count is bounded so the sampler cannot loop forever; if all retries miss the valid
+/// range, the function falls back to a final modulo-based result to guarantee forward progress.
 fn roll_die(next_seed: &mut u32, sides: u16) -> u16 {
     if sides == 0 {
         return 0;
@@ -382,8 +394,8 @@ fn roll_die(next_seed: &mut u32, sides: u16) -> u16 {
 
     for _ in 0..MAX_REJECTION_SAMPLING_ATTEMPTS {
         *next_seed = next_seed
-            .wrapping_mul(1_664_525)
-            .wrapping_add(1_013_904_223);
+            .wrapping_mul(LCG_MULTIPLIER)
+            .wrapping_add(LCG_INCREMENT);
 
         if *next_seed < limit {
             return ((*next_seed % sides) + 1) as u16;
@@ -391,8 +403,8 @@ fn roll_die(next_seed: &mut u32, sides: u16) -> u16 {
     }
 
     *next_seed = next_seed
-        .wrapping_mul(1_664_525)
-        .wrapping_add(1_013_904_223);
+        .wrapping_mul(LCG_MULTIPLIER)
+        .wrapping_add(LCG_INCREMENT);
     ((*next_seed % sides) + 1) as u16
 }
 
