@@ -355,8 +355,7 @@ fn resolve_dice_requests(mut dice_log: ResMut<DiceLog>, mut save_state: ResMut<S
                 .map(|_| roll_die(&mut dice_log.next_seed, request.sides))
                 .collect::<Vec<_>>()
         };
-        let total =
-            rolls.iter().map(|roll| i32::from(*roll)).sum::<i32>() + i32::from(request.modifier);
+        let total = rolls.iter().copied().map(i32::from).sum::<i32>() + i32::from(request.modifier);
 
         dice_log.resolved.push(DiceRoll {
             label: request.label,
@@ -370,6 +369,10 @@ fn resolve_dice_requests(mut dice_log: ResMut<DiceLog>, mut save_state: ResMut<S
 }
 
 fn roll_die(next_seed: &mut u32, sides: u16) -> u16 {
+    if sides == 0 {
+        return 0;
+    }
+
     let sides = u32::from(sides);
     let limit = u32::MAX - (u32::MAX % sides);
 
@@ -463,14 +466,31 @@ mod tests {
         app.update();
 
         queue_dice_roll(&mut app, "initiative", 2, 6, 1);
+        queue_dice_roll(&mut app, "penalty", 1, 4, -1);
 
         app.update();
 
         let dice_log = app.world().resource::<DiceLog>();
 
         assert_eq!(dice_log.pending.len(), 0);
-        assert_eq!(dice_log.resolved.len(), 1);
+        assert_eq!(dice_log.resolved.len(), 2);
         assert_eq!(dice_log.resolved[0].rolls, vec![2, 3]);
         assert_eq!(dice_log.resolved[0].total, 6);
+        assert!(
+            dice_log.resolved[0]
+                .rolls
+                .iter()
+                .all(|roll| (1..=6).contains(roll))
+        );
+        assert!(
+            dice_log.resolved[1]
+                .rolls
+                .iter()
+                .all(|roll| (1..=4).contains(roll))
+        );
+        assert_eq!(
+            dice_log.resolved[1].total,
+            i32::from(dice_log.resolved[1].rolls[0]) - 1
+        );
     }
 }
