@@ -34,7 +34,7 @@ pub enum SessionMode {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TokenRole {
     Player,
-    Adversary,
+    Npc,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Component)]
@@ -246,7 +246,7 @@ fn setup_world(mut commands: Commands) {
     commands.spawn((
         Token {
             name: "Goblin Skirmisher",
-            role: TokenRole::Adversary,
+            role: TokenRole::Npc,
             hit_points: 12,
         },
         GridPosition::new(2, -1),
