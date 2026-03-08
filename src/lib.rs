@@ -133,7 +133,7 @@ pub struct TurnOrder {
 #[derive(Debug, Clone, PartialEq, Eq, Resource)]
 pub struct SelectionState {
     pub selected: Option<Entity>,
-    pub measured_distance: u32,
+    pub last_moved_distance: u32,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -300,7 +300,7 @@ fn setup_world(mut commands: Commands) {
     });
     commands.insert_resource(SelectionState {
         selected: Some(hero),
-        measured_distance: 0,
+        last_moved_distance: 0,
     });
 }
 
@@ -342,7 +342,7 @@ fn apply_movement_requests(
     }
 
     if let Some(moved_entity) = moved_entity {
-        selection.measured_distance = *distance_by_entity.get(&moved_entity).unwrap_or(&0);
+        selection.last_moved_distance = *distance_by_entity.get(&moved_entity).unwrap_or(&0);
         selection.selected = Some(moved_entity);
     }
 }
@@ -378,7 +378,7 @@ fn resolve_dice_requests(mut dice_log: ResMut<DiceLog>, mut save_state: ResMut<S
     save_state.dirty = true;
 }
 
-/// Generates a deterministic but unbiased die roll for tests and headless engine bootstrap flows.
+/// Generates a deterministic but unbiased die roll for the engine's runtime dice queue.
 ///
 /// The linear congruential generator keeps the implementation dependency-free, while rejection
 /// sampling avoids modulo bias for die sizes that do not evenly divide the generator range.
@@ -441,6 +441,7 @@ mod tests {
         assert_eq!(turn_order.round, 1);
         assert_eq!(turn_order.combatants.len(), 2);
         assert!(selection.selected.is_some());
+        assert_eq!(selection.last_moved_distance, 0);
     }
 
     #[test]
@@ -459,7 +460,7 @@ mod tests {
 
         assert_eq!(*position, GridPosition::new(2, -2));
         assert_eq!(selection.selected, Some(hero));
-        assert_eq!(selection.measured_distance, 2);
+        assert_eq!(selection.last_moved_distance, 2);
         assert!(save_state.dirty);
     }
 
@@ -478,7 +479,7 @@ mod tests {
         let position = app.world().entity(hero).get::<GridPosition>().unwrap();
 
         assert_eq!(*position, GridPosition::new(2, -1));
-        assert_eq!(selection.measured_distance, 2);
+        assert_eq!(selection.last_moved_distance, 2);
     }
 
     #[test]
