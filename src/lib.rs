@@ -2,6 +2,8 @@ use bevy_app::{App, Plugin, Startup, Update};
 use bevy_ecs::prelude::*;
 use std::{cmp::Reverse, collections::VecDeque, mem};
 
+const MAX_REJECTION_SAMPLING_ATTEMPTS: usize = 8;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Resource)]
 pub enum EnginePhase {
     Bootstrapping,
@@ -321,9 +323,8 @@ fn apply_movement_requests(
     mut positions: Query<&mut GridPosition>,
 ) {
     let pending = mem::take(&mut queue.pending);
-    let original_selection = selection.selected;
     let mut total_distance_traveled = 0;
-    let mut moved_entity = selection.selected;
+    let mut moved_entity = None;
 
     for (entity, destination) in pending {
         if let Ok(mut position) = positions.get_mut(entity) {
@@ -334,9 +335,9 @@ fn apply_movement_requests(
         }
     }
 
-    if total_distance_traveled > 0 || moved_entity != original_selection {
+    if let Some(moved_entity) = moved_entity {
         selection.measured_distance = total_distance_traveled;
-        selection.selected = moved_entity;
+        selection.selected = Some(moved_entity);
     }
 }
 
@@ -379,7 +380,7 @@ fn roll_die(next_seed: &mut u32, sides: u16) -> u16 {
     let sides = u32::from(sides);
     let limit = u32::MAX - (u32::MAX % sides);
 
-    for _ in 0..8 {
+    for _ in 0..MAX_REJECTION_SAMPLING_ATTEMPTS {
         *next_seed = next_seed
             .wrapping_mul(1_664_525)
             .wrapping_add(1_013_904_223);
