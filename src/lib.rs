@@ -1,10 +1,6 @@
 use bevy_app::{App, Plugin, Startup, Update};
 use bevy_ecs::prelude::*;
-use std::{
-    cmp::Reverse,
-    collections::{HashMap, VecDeque},
-    mem,
-};
+use std::{cmp::Reverse, collections::VecDeque, mem};
 
 const MAX_REJECTION_SAMPLING_ATTEMPTS: usize = 8;
 const LCG_MULTIPLIER: u32 = 1_664_525;
@@ -329,20 +325,38 @@ fn apply_movement_requests(
     mut positions: Query<&mut GridPosition>,
 ) {
     let pending = mem::take(&mut queue.pending);
-    let mut distance_by_entity = HashMap::new();
+    let original_selection = selection.selected;
     let mut moved_entity = None;
+    let mut last_moved_distance = 0;
+    let mut multiple_entities_moved = false;
 
     for (entity, destination) in pending {
         if let Ok(mut position) = positions.get_mut(entity) {
-            *distance_by_entity.entry(entity).or_insert(0) += position.distance_to(destination);
+            let move_distance = position.distance_to(destination);
             *position = destination;
-            moved_entity = Some(entity);
+            match moved_entity {
+                Some(previous_entity) if previous_entity == entity => {
+                    last_moved_distance += move_distance;
+                }
+                Some(_) => {
+                    multiple_entities_moved = true;
+                    moved_entity = Some(entity);
+                    last_moved_distance = move_distance;
+                }
+                None => {
+                    moved_entity = Some(entity);
+                    last_moved_distance = move_distance;
+                }
+            }
             save_state.dirty = true;
         }
     }
 
-    if let Some(moved_entity) = moved_entity {
-        selection.last_moved_distance = *distance_by_entity.get(&moved_entity).unwrap_or(&0);
+    if multiple_entities_moved {
+        selection.selected = original_selection;
+        selection.last_moved_distance = 0;
+    } else if let Some(moved_entity) = moved_entity {
+        selection.last_moved_distance = last_moved_distance;
         selection.selected = Some(moved_entity);
     }
 }
@@ -378,7 +392,7 @@ fn resolve_dice_requests(mut dice_log: ResMut<DiceLog>, mut save_state: ResMut<S
     save_state.dirty = true;
 }
 
-/// Generates a deterministic but unbiased die roll for the engine's runtime dice queue.
+/// Generates a deterministic die roll for the engine's runtime dice queue.
 ///
 /// The linear congruential generator keeps the implementation dependency-free, while rejection
 /// sampling avoids modulo bias for die sizes that do not evenly divide the generator range.
@@ -480,6 +494,29 @@ mod tests {
 
         assert_eq!(*position, GridPosition::new(2, -1));
         assert_eq!(selection.last_moved_distance, 2);
+    }
+
+    #[test]
+    fn moving_multiple_entities_keeps_the_existing_selection_summary() {
+        let mut app = build_app();
+        app.update();
+
+        let hero = entity_named(&mut app, "Seren");
+        let goblin = entity_named(&mut app, "Goblin Skirmisher");
+
+        queue_token_move(&mut app, hero, GridPosition::new(1, 0));
+        queue_token_move(&mut app, goblin, GridPosition::new(3, -1));
+
+        app.update();
+
+        let selection = app.world().resource::<SelectionState>();
+        let hero_position = app.world().entity(hero).get::<GridPosition>().unwrap();
+        let goblin_position = app.world().entity(goblin).get::<GridPosition>().unwrap();
+
+        assert_eq!(selection.selected, Some(hero));
+        assert_eq!(selection.last_moved_distance, 0);
+        assert_eq!(*hero_position, GridPosition::new(1, 0));
+        assert_eq!(*goblin_position, GridPosition::new(3, -1));
     }
 
     #[test]
