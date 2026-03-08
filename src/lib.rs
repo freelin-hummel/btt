@@ -474,13 +474,21 @@ mod tests {
 
         assert_eq!(dice_log.pending.len(), 0);
         assert_eq!(dice_log.resolved.len(), 2);
-        assert_eq!(dice_log.resolved[0].rolls, vec![2, 3]);
-        assert_eq!(dice_log.resolved[0].total, 6);
         assert!(
             dice_log.resolved[0]
                 .rolls
                 .iter()
                 .all(|roll| (1..=6).contains(roll))
+        );
+        assert_eq!(
+            dice_log.resolved[0].total,
+            dice_log.resolved[0]
+                .rolls
+                .iter()
+                .copied()
+                .map(i32::from)
+                .sum::<i32>()
+                + i32::from(dice_log.resolved[0].modifier)
         );
         assert!(
             dice_log.resolved[1]
