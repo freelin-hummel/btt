@@ -321,21 +321,20 @@ fn apply_movement_requests(
     mut positions: Query<&mut GridPosition>,
 ) {
     let pending = mem::take(&mut queue.pending);
+    let original_selection = selection.selected;
     let mut total_distance_traveled = 0;
     let mut moved_entity = selection.selected;
-    let mut moved_any_token = false;
 
     for (entity, destination) in pending {
         if let Ok(mut position) = positions.get_mut(entity) {
             total_distance_traveled += position.distance_to(destination);
             *position = destination;
             moved_entity = Some(entity);
-            moved_any_token = true;
             save_state.dirty = true;
         }
     }
 
-    if moved_any_token {
+    if total_distance_traveled > 0 || moved_entity != original_selection {
         selection.measured_distance = total_distance_traveled;
         selection.selected = moved_entity;
     }
@@ -380,7 +379,7 @@ fn roll_die(next_seed: &mut u32, sides: u16) -> u16 {
     let sides = u32::from(sides);
     let limit = u32::MAX - (u32::MAX % sides);
 
-    loop {
+    for _ in 0..8 {
         *next_seed = next_seed
             .wrapping_mul(1_664_525)
             .wrapping_add(1_013_904_223);
@@ -389,6 +388,11 @@ fn roll_die(next_seed: &mut u32, sides: u16) -> u16 {
             return ((*next_seed % sides) + 1) as u16;
         }
     }
+
+    *next_seed = next_seed
+        .wrapping_mul(1_664_525)
+        .wrapping_add(1_013_904_223);
+    ((*next_seed % sides) + 1) as u16
 }
 
 #[cfg(test)]
