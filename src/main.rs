@@ -1,8 +1,8 @@
-use btt::{bootstrap_summary, build_app};
+use btt::{build_app, engine_summary};
 
 fn main() {
     let mut app = build_app();
     app.update();
 
-    println!("{}", bootstrap_summary());
+    println!("{}", engine_summary(app.world()));
 }
