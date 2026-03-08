@@ -321,23 +321,23 @@ fn apply_movement_requests(
     mut positions: Query<&mut GridPosition>,
 ) {
     let pending = mem::take(&mut queue.pending);
-    let mut measured_distance = 0;
-    let mut last_selected = selection.selected;
+    let mut total_distance_traveled = 0;
+    let mut moved_entity = selection.selected;
     let mut moved_any_token = false;
 
     for (entity, destination) in pending {
         if let Ok(mut position) = positions.get_mut(entity) {
-            measured_distance += position.distance_to(destination);
+            total_distance_traveled += position.distance_to(destination);
             *position = destination;
-            last_selected = Some(entity);
+            moved_entity = Some(entity);
             moved_any_token = true;
             save_state.dirty = true;
         }
     }
 
     if moved_any_token {
-        selection.measured_distance = measured_distance;
-        selection.selected = last_selected;
+        selection.measured_distance = total_distance_traveled;
+        selection.selected = moved_entity;
     }
 }
 
@@ -355,7 +355,11 @@ fn resolve_dice_requests(mut dice_log: ResMut<DiceLog>, mut save_state: ResMut<S
                 .map(|_| roll_die(&mut dice_log.next_seed, request.sides))
                 .collect::<Vec<_>>()
         };
-        let total = rolls.iter().copied().map(i32::from).sum::<i32>() + i32::from(request.modifier);
+        let total = if rolls.is_empty() {
+            i32::from(request.modifier)
+        } else {
+            rolls.iter().copied().map(i32::from).sum::<i32>() + i32::from(request.modifier)
+        };
 
         dice_log.resolved.push(DiceRoll {
             label: request.label,
