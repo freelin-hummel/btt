@@ -1,8 +1,5 @@
-use btt::{build_app, engine_summary};
+use btt::build_desktop_app;
 
 fn main() {
-    let mut app = build_app();
-    app.update();
-
-    println!("{}", engine_summary(app.world()));
+    build_desktop_app().run();
 }

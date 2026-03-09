@@ -1,5 +1,5 @@
-use bevy_app::{App, Plugin, Startup, Update};
-use bevy_ecs::prelude::*;
+use bevy::{prelude::*, window::WindowPlugin};
+use bevy_egui::{EguiContexts, EguiPlugin, egui};
 use std::{cmp::Reverse, collections::VecDeque, mem};
 
 const MAX_REJECTION_SAMPLING_ATTEMPTS: usize = 8;
@@ -181,6 +181,25 @@ pub fn build_app() -> App {
     app
 }
 
+pub fn build_desktop_app() -> App {
+    let mut app = App::new();
+    app.insert_resource(ClearColor(Color::srgb(0.08, 0.07, 0.05)))
+        .add_plugins(DefaultPlugins.set(WindowPlugin {
+            primary_window: Some(Window {
+                title: "BTT Command Deck".into(),
+                resolution: (1280.0, 800.0).into(),
+                resizable: true,
+                ..default()
+            }),
+            ..default()
+        }))
+        .add_plugins(EguiPlugin)
+        .add_plugins(BttEnginePlugin)
+        .add_systems(Startup, (spawn_primary_camera, configure_ui_theme))
+        .add_systems(Update, render_btt_ui);
+    app
+}
+
 pub fn queue_token_move(app: &mut App, entity: Entity, destination: GridPosition) {
     app.world_mut()
         .resource_mut::<MovementQueue>()
@@ -228,6 +247,167 @@ pub fn engine_summary(world: &World) -> String {
         network.players.len(),
         dice_log.resolved.len(),
     )
+}
+
+fn spawn_primary_camera(mut commands: Commands) {
+    commands.spawn(Camera2d);
+}
+
+fn configure_ui_theme(mut contexts: EguiContexts) {
+    let ctx = contexts.ctx_mut();
+    let mut visuals = egui::Visuals::light();
+    visuals.window_fill = egui::Color32::from_rgb(247, 240, 226);
+    visuals.panel_fill = egui::Color32::from_rgb(239, 230, 213);
+    visuals.widgets.noninteractive.bg_fill = egui::Color32::from_rgb(224, 210, 186);
+    visuals.widgets.inactive.bg_fill = egui::Color32::from_rgb(197, 112, 63);
+    visuals.widgets.hovered.bg_fill = egui::Color32::from_rgb(173, 89, 42);
+    visuals.widgets.active.bg_fill = egui::Color32::from_rgb(122, 58, 27);
+    visuals.selection.bg_fill = egui::Color32::from_rgb(113, 75, 53);
+    ctx.set_visuals(visuals);
+
+    let mut style = (*ctx.style()).clone();
+    style.spacing.item_spacing = egui::vec2(10.0, 8.0);
+    style.spacing.window_margin = egui::Margin::same(14.0);
+    style.spacing.button_padding = egui::vec2(10.0, 6.0);
+    ctx.set_style(style);
+}
+
+fn render_btt_ui(
+    mut contexts: EguiContexts,
+    phase: Res<EnginePhase>,
+    map: Res<BattleMap>,
+    ruleset: Res<Ruleset>,
+    journal: Res<Journal>,
+    network: Res<NetworkState>,
+    save_state: Res<SaveState>,
+    selection: Res<SelectionState>,
+    turn_order: Res<TurnOrder>,
+    dice_log: Res<DiceLog>,
+    tokens: Query<(Entity, &Token, &GridPosition, &Initiative)>,
+) {
+    let ctx = contexts.ctx_mut();
+    let mut combatants = tokens
+        .iter()
+        .map(|(entity, token, position, initiative)| (entity, token, position, initiative.0))
+        .collect::<Vec<_>>();
+    combatants.sort_by_key(|(_, _, _, initiative)| Reverse(*initiative));
+
+    let active_name = turn_order
+        .combatants
+        .get(turn_order.active_index)
+        .and_then(|entity| tokens.get(*entity).ok())
+        .map(|(_, token, _, _)| token.name)
+        .unwrap_or("None");
+    let selected_name = selection
+        .selected
+        .and_then(|entity| tokens.get(entity).ok())
+        .map(|(_, token, _, _)| token.name)
+        .unwrap_or("None");
+
+    egui::TopBottomPanel::top("btt_header")
+        .exact_height(84.0)
+        .show(ctx, |ui| {
+            ui.horizontal(|ui| {
+                ui.heading("BTT Command Deck");
+                ui.separator();
+                ui.label(format!("Map: {}", map.name));
+                ui.separator();
+                ui.label(format!("Phase: {:?}", *phase));
+                ui.separator();
+                ui.label(format!("Round {}", turn_order.round));
+            });
+            ui.add_space(6.0);
+            ui.label(format!(
+                "{} players connected, {} actions loaded, {} journal entries",
+                network.players.len(),
+                ruleset.actions.len(),
+                journal.entries.len(),
+            ));
+        });
+
+    egui::SidePanel::left("btt_sidebar")
+        .default_width(300.0)
+        .resizable(false)
+        .show(ctx, |ui| {
+            ui.heading("Session");
+            ui.label(format!("Mode: {:?}", network.mode));
+            ui.label(format!("GM: {}", network.gm));
+            ui.label(format!("Grid: {:?} {}x{}", map.grid, map.width, map.height));
+            ui.label(format!("Active Combatant: {}", active_name));
+            ui.label(format!("Selected: {}", selected_name));
+            ui.label(format!("Last Measured Move: {}", selection.last_moved_distance));
+            ui.label(format!("Autosave Slot: {}", save_state.autosave_slot));
+            ui.label(format!("Dirty State: {}", save_state.dirty));
+
+            ui.add_space(12.0);
+            ui.heading("Rules");
+            for action in &ruleset.actions {
+                ui.group(|ui| {
+                    ui.strong(format!("{} [{}]", action.name, action.dice));
+                    ui.label(action.description);
+                });
+            }
+
+            ui.add_space(12.0);
+            ui.heading("Journal");
+            for entry in &journal.entries {
+                ui.collapsing(entry.title, |ui| {
+                    ui.label(entry.body);
+                });
+            }
+        });
+
+    egui::CentralPanel::default().show(ctx, |ui| {
+        ui.heading("Combatants");
+        ui.add_space(8.0);
+
+        egui::Grid::new("combatants_grid")
+            .num_columns(5)
+            .striped(true)
+            .spacing(egui::vec2(18.0, 10.0))
+            .show(ui, |ui| {
+                ui.strong("Name");
+                ui.strong("Role");
+                ui.strong("HP");
+                ui.strong("Initiative");
+                ui.strong("Hex");
+                ui.end_row();
+
+                for (entity, token, position, initiative) in combatants {
+                    let mut name = token.name.to_string();
+                    if Some(entity) == selection.selected {
+                        name.push_str("  <selected>");
+                    }
+
+                    ui.label(name);
+                    ui.label(token_role_label(token.role));
+                    ui.label(token.hit_points.to_string());
+                    ui.label(initiative.to_string());
+                    ui.label(format!("({}, {})", position.q, position.r));
+                    ui.end_row();
+                }
+            });
+
+        ui.add_space(16.0);
+        ui.heading("Dice Log");
+        if dice_log.resolved.is_empty() {
+            ui.label("No dice have been rolled yet.");
+        } else {
+            for roll in dice_log.resolved.iter().rev() {
+                ui.label(format!(
+                    "{} => {:?} {:+} = {}",
+                    roll.label, roll.rolls, roll.modifier, roll.total
+                ));
+            }
+        }
+    });
+}
+
+fn token_role_label(role: TokenRole) -> &'static str {
+    match role {
+        TokenRole::Player => "Player",
+        TokenRole::Npc => "NPC",
+    }
 }
 
 fn setup_world(mut commands: Commands) {
@@ -428,9 +608,9 @@ mod tests {
         BattleMap, DiceLog, EnginePhase, GridKind, GridPosition, SaveState, SelectionState, Token,
         TurnOrder, build_app, queue_dice_roll, queue_token_move,
     };
-    use bevy_ecs::prelude::Entity;
+    use bevy::prelude::{App, Entity};
 
-    fn entity_named(app: &mut bevy_app::App, name: &str) -> Entity {
+    fn entity_named(app: &mut App, name: &str) -> Entity {
         let mut query = app.world_mut().query::<(Entity, &Token)>();
         query
             .iter(app.world())
