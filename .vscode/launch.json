@@ -1,0 +1,23 @@
+{
+	"version": "0.2.0",
+	"configurations": [
+		{
+			"type": "lldb",
+			"request": "launch",
+			"name": "Debug BTT desktop app",
+			"cargo": {
+				"args": [
+					"build",
+					"--bin",
+					"btt"
+				],
+				"filter": {
+					"name": "btt",
+					"kind": "bin"
+				}
+			},
+			"cwd": "${workspaceFolder}",
+			"args": []
+		}
+	]
+}

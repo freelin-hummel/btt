@@ -1,10 +1,26 @@
-use bevy::{prelude::*, window::WindowPlugin};
+use bevy::{
+    prelude::*,
+    window::{ExitCondition, WindowPlugin},
+};
 use bevy_egui::{EguiContexts, EguiPlugin, egui};
 use std::{cmp::Reverse, collections::VecDeque, mem};
 
 const MAX_REJECTION_SAMPLING_ATTEMPTS: usize = 8;
 const LCG_MULTIPLIER: u32 = 1_664_525;
 const LCG_INCREMENT: u32 = 1_013_904_223;
+const BOARD_HEX_RADIUS: f32 = 28.0;
+const BOARD_VIEW_RADIUS: i32 = 4;
+const BOARD_VIEW_DISTANCE: u32 = BOARD_VIEW_RADIUS as u32;
+const SQRT_3: f32 = 1.732_050_8;
+const MIN_BOARD_HEIGHT: f32 = 320.0;
+const MAX_BOARD_HEIGHT: f32 = 460.0;
+const BOARD_CORNER_RADIUS: f32 = 18.0;
+const TOKEN_RADIUS_RATIO: f32 = 0.46;
+const TOKEN_NAME_OFFSET_RATIO: f32 = 0.92;
+const TOKEN_INITIALS_FONT_SIZE: f32 = 16.0;
+const TOKEN_NAME_FONT_SIZE: f32 = 13.0;
+const SELECTED_TOKEN_STROKE_WIDTH: f32 = 4.0;
+const UNSELECTED_TOKEN_STROKE_WIDTH: f32 = 2.0;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Resource)]
 pub enum EnginePhase {
@@ -160,18 +176,49 @@ pub struct MovementQueue {
     pub pending: Vec<(Entity, GridPosition)>,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum BoardCommand {
+    Select(Entity),
+    MoveSelectedTo(GridPosition),
+}
+
+#[derive(Debug, Default, Resource)]
+pub struct BoardCommandQueue {
+    pub pending: Vec<BoardCommand>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Resource, Default)]
+pub struct DesktopPresentationState {
+    pub hovered_hex: Option<GridPosition>,
+    pub inspected_hex: Option<GridPosition>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct CombatantSnapshot {
+    entity: Entity,
+    name: &'static str,
+    role: TokenRole,
+    hit_points: i32,
+    position: GridPosition,
+    initiative: i16,
+}
+
 pub struct BttEnginePlugin;
 
 impl Plugin for BttEnginePlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(EnginePhase::Bootstrapping)
             .insert_resource(DiceLog::default())
+            .insert_resource(BoardCommandQueue::default())
             .insert_resource(MovementQueue::default())
             .add_systems(
                 Startup,
                 (setup_world, initialize_turn_order, mark_engine_ready).chain(),
             )
-            .add_systems(Update, (apply_movement_requests, resolve_dice_requests));
+            .add_systems(
+                Update,
+                (apply_board_commands, apply_movement_requests, resolve_dice_requests).chain(),
+            );
     }
 }
 
@@ -184,6 +231,7 @@ pub fn build_app() -> App {
 pub fn build_desktop_app() -> App {
     let mut app = App::new();
     app.insert_resource(ClearColor(Color::srgb(0.08, 0.07, 0.05)))
+        .insert_resource(DesktopPresentationState::default())
         .add_plugins(DefaultPlugins.set(WindowPlugin {
             primary_window: Some(Window {
                 title: "BTT Command Deck".into(),
@@ -191,12 +239,14 @@ pub fn build_desktop_app() -> App {
                 resizable: true,
                 ..default()
             }),
+            exit_condition: ExitCondition::OnPrimaryClosed,
+            close_when_requested: true,
             ..default()
         }))
         .add_plugins(EguiPlugin)
         .add_plugins(BttEnginePlugin)
         .add_systems(Startup, (spawn_primary_camera, configure_ui_theme))
-        .add_systems(Update, render_btt_ui);
+        .add_systems(Update, render_btt_ui.before(apply_board_commands));
     app
 }
 
@@ -223,6 +273,13 @@ pub fn queue_dice_roll(
             sides,
             modifier,
         });
+}
+
+pub fn queue_board_command(app: &mut App, command: BoardCommand) {
+    app.world_mut()
+        .resource_mut::<BoardCommandQueue>()
+        .pending
+        .push(command);
 }
 
 pub fn engine_summary(world: &World) -> String {
@@ -274,6 +331,7 @@ fn configure_ui_theme(mut contexts: EguiContexts) {
 
 fn render_btt_ui(
     mut contexts: EguiContexts,
+    mut presentation: ResMut<DesktopPresentationState>,
     phase: Res<EnginePhase>,
     map: Res<BattleMap>,
     ruleset: Res<Ruleset>,
@@ -283,25 +341,41 @@ fn render_btt_ui(
     selection: Res<SelectionState>,
     turn_order: Res<TurnOrder>,
     dice_log: Res<DiceLog>,
+    mut board_commands: ResMut<BoardCommandQueue>,
     tokens: Query<(Entity, &Token, &GridPosition, &Initiative)>,
 ) {
     let ctx = contexts.ctx_mut();
     let mut combatants = tokens
         .iter()
-        .map(|(entity, token, position, initiative)| (entity, token, position, initiative.0))
+        .map(|(entity, token, position, initiative)| CombatantSnapshot {
+            entity,
+            name: token.name,
+            role: token.role,
+            hit_points: token.hit_points,
+            position: *position,
+            initiative: initiative.0,
+        })
         .collect::<Vec<_>>();
-    combatants.sort_by_key(|(_, _, _, initiative)| Reverse(*initiative));
+    combatants.sort_by_key(|combatant| Reverse(combatant.initiative));
 
     let active_name = turn_order
         .combatants
         .get(turn_order.active_index)
-        .and_then(|entity| tokens.get(*entity).ok())
-        .map(|(_, token, _, _)| token.name)
+        .and_then(|entity| {
+            combatants
+                .iter()
+                .find(|combatant| combatant.entity == *entity)
+                .map(|combatant| combatant.name)
+        })
         .unwrap_or("None");
     let selected_name = selection
         .selected
-        .and_then(|entity| tokens.get(entity).ok())
-        .map(|(_, token, _, _)| token.name)
+        .and_then(|entity| {
+            combatants
+                .iter()
+                .find(|combatant| combatant.entity == entity)
+                .map(|combatant| combatant.name)
+        })
         .unwrap_or("None");
 
     egui::TopBottomPanel::top("btt_header")
@@ -358,6 +432,72 @@ fn render_btt_ui(
         });
 
     egui::CentralPanel::default().show(ctx, |ui| {
+        ui.heading("Board");
+        ui.add_space(8.0);
+        ui.label(
+            "Click a token to select it, click another token to change selection, or click an empty hex to move the selected token.",
+        );
+        ui.label(format!(
+            "Hovered Hex: {}",
+            presentation
+                .hovered_hex
+                .map(format_grid_position)
+                .unwrap_or_else(|| "None".to_string())
+        ));
+        ui.label(format!(
+            "Last Clicked Hex: {}",
+            presentation
+                .inspected_hex
+                .map(format_grid_position)
+                .unwrap_or_else(|| "None".to_string())
+        ));
+        ui.add_space(8.0);
+
+        let board_height = ui.available_height().min(MAX_BOARD_HEIGHT).max(MIN_BOARD_HEIGHT);
+        let (board_rect, board_response) = ui.allocate_exact_size(
+            egui::vec2(ui.available_width(), board_height),
+            egui::Sense::click(),
+        );
+        let painter = ui.painter_at(board_rect);
+        painter.rect_filled(board_rect, BOARD_CORNER_RADIUS, board_background_color());
+
+        let board_center = board_center_hex(selection.selected, &combatants);
+        draw_board_tiles(
+            &painter,
+            board_rect,
+            board_center,
+            &combatants,
+            &selection,
+            &presentation,
+        );
+
+        if let Some(pointer_position) = board_response.hover_pos() {
+            let hovered_hex = screen_to_grid_position(pointer_position, board_rect, board_center);
+            presentation.hovered_hex =
+                board_is_visible(board_center, hovered_hex).then_some(hovered_hex);
+        } else {
+            presentation.hovered_hex = None;
+        }
+
+        if board_response.clicked() {
+            if let Some(pointer_position) = board_response.interact_pointer_pos() {
+                let clicked_hex = screen_to_grid_position(pointer_position, board_rect, board_center);
+                if board_is_visible(board_center, clicked_hex) {
+                    presentation.inspected_hex = Some(clicked_hex);
+                    let occupant = combatants
+                        .iter()
+                        .find(|combatant| combatant.position == clicked_hex)
+                        .map(|combatant| combatant.entity);
+                    if let Some(command) =
+                        board_command_for_click(selection.selected, occupant, clicked_hex)
+                    {
+                        board_commands.pending.push(command);
+                    }
+                }
+            }
+        }
+
+        ui.add_space(16.0);
         ui.heading("Combatants");
         ui.add_space(8.0);
 
@@ -373,17 +513,17 @@ fn render_btt_ui(
                 ui.strong("Hex");
                 ui.end_row();
 
-                for (entity, token, position, initiative) in combatants {
-                    let mut name = token.name.to_string();
-                    if Some(entity) == selection.selected {
+                for combatant in &combatants {
+                    let mut name = combatant.name.to_string();
+                    if Some(combatant.entity) == selection.selected {
                         name.push_str("  <selected>");
                     }
 
                     ui.label(name);
-                    ui.label(token_role_label(token.role));
-                    ui.label(token.hit_points.to_string());
-                    ui.label(initiative.to_string());
-                    ui.label(format!("({}, {})", position.q, position.r));
+                    ui.label(token_role_label(combatant.role));
+                    ui.label(combatant.hit_points.to_string());
+                    ui.label(combatant.initiative.to_string());
+                    ui.label(format_grid_position(combatant.position));
                     ui.end_row();
                 }
             });
@@ -498,6 +638,28 @@ fn mark_engine_ready(mut phase: ResMut<EnginePhase>) {
     *phase = EnginePhase::Running;
 }
 
+fn apply_board_commands(
+    mut commands: ResMut<BoardCommandQueue>,
+    mut selection: ResMut<SelectionState>,
+    mut movement: ResMut<MovementQueue>,
+    tokens: Query<(), With<Token>>,
+) {
+    for command in mem::take(&mut commands.pending) {
+        match command {
+            BoardCommand::Select(entity) if tokens.contains(entity) => {
+                selection.selected = Some(entity);
+                selection.last_moved_distance = 0;
+            }
+            BoardCommand::MoveSelectedTo(destination) => {
+                if let Some(entity) = selection.selected {
+                    movement.pending.push((entity, destination));
+                }
+            }
+            _ => {}
+        }
+    }
+}
+
 fn apply_movement_requests(
     mut queue: ResMut<MovementQueue>,
     mut selection: ResMut<SelectionState>,
@@ -572,6 +734,189 @@ fn resolve_dice_requests(mut dice_log: ResMut<DiceLog>, mut save_state: ResMut<S
     save_state.dirty = true;
 }
 
+fn board_center_hex(selected: Option<Entity>, combatants: &[CombatantSnapshot]) -> GridPosition {
+    selected
+        .and_then(|entity| {
+            combatants
+                .iter()
+                .find(|combatant| combatant.entity == entity)
+                .map(|combatant| combatant.position)
+        })
+        .or_else(|| combatants.first().map(|combatant| combatant.position))
+        .unwrap_or(GridPosition::new(0, 0))
+}
+
+fn board_command_for_click(
+    selected: Option<Entity>,
+    occupant: Option<Entity>,
+    clicked_hex: GridPosition,
+) -> Option<BoardCommand> {
+    occupant
+        .map(BoardCommand::Select)
+        .or_else(|| selected.map(|_| BoardCommand::MoveSelectedTo(clicked_hex)))
+}
+
+fn board_is_visible(center: GridPosition, hex: GridPosition) -> bool {
+    center.distance_to(hex) <= BOARD_VIEW_DISTANCE
+}
+
+fn draw_board_tiles(
+    painter: &egui::Painter,
+    rect: egui::Rect,
+    board_center: GridPosition,
+    combatants: &[CombatantSnapshot],
+    selection: &SelectionState,
+    presentation: &DesktopPresentationState,
+) {
+    for q in (board_center.q - BOARD_VIEW_RADIUS)..=(board_center.q + BOARD_VIEW_RADIUS) {
+        for r in (board_center.r - BOARD_VIEW_RADIUS)..=(board_center.r + BOARD_VIEW_RADIUS) {
+            let hex = GridPosition::new(q, r);
+            if !board_is_visible(board_center, hex) {
+                continue;
+            }
+
+            let hex_center = grid_position_to_screen(hex, rect, board_center);
+            let fill = hex_fill_color(matches!(presentation.hovered_hex, Some(hovered) if hovered == hex));
+            painter.add(egui::Shape::convex_polygon(
+                hex_outline_points(hex_center, BOARD_HEX_RADIUS),
+                fill,
+                egui::Stroke::new(1.0, egui::Color32::from_rgb(171, 147, 126)),
+            ));
+        }
+    }
+
+    for combatant in combatants {
+        let center = grid_position_to_screen(combatant.position, rect, board_center);
+        let fill = token_fill_color(combatant.role);
+        let stroke = token_stroke(Some(combatant.entity) == selection.selected);
+        let token_radius = BOARD_HEX_RADIUS * TOKEN_RADIUS_RATIO;
+
+        painter.circle_filled(center, token_radius, fill);
+        painter.circle_stroke(center, token_radius, stroke);
+        painter.text(
+            center,
+            egui::Align2::CENTER_CENTER,
+            token_initials(combatant.name),
+            egui::FontId::proportional(TOKEN_INITIALS_FONT_SIZE),
+            egui::Color32::WHITE,
+        );
+        painter.text(
+            egui::pos2(center.x, center.y + BOARD_HEX_RADIUS * TOKEN_NAME_OFFSET_RATIO),
+            egui::Align2::CENTER_TOP,
+            combatant.name,
+            egui::FontId::proportional(TOKEN_NAME_FONT_SIZE),
+            egui::Color32::from_rgb(247, 240, 226),
+        );
+    }
+}
+
+fn board_background_color() -> egui::Color32 {
+    egui::Color32::from_rgb(76, 59, 47)
+}
+
+fn hex_fill_color(is_hovered: bool) -> egui::Color32 {
+    if is_hovered {
+        egui::Color32::from_rgb(120, 97, 80)
+    } else {
+        egui::Color32::from_rgb(98, 77, 62)
+    }
+}
+
+fn token_fill_color(role: TokenRole) -> egui::Color32 {
+    match role {
+        TokenRole::Player => egui::Color32::from_rgb(61, 111, 176),
+        TokenRole::Npc => egui::Color32::from_rgb(173, 89, 42),
+    }
+}
+
+fn token_stroke(is_selected: bool) -> egui::Stroke {
+    if is_selected {
+        egui::Stroke::new(
+            SELECTED_TOKEN_STROKE_WIDTH,
+            egui::Color32::from_rgb(255, 232, 154),
+        )
+    } else {
+        egui::Stroke::new(
+            UNSELECTED_TOKEN_STROKE_WIDTH,
+            egui::Color32::from_rgb(244, 236, 223),
+        )
+    }
+}
+
+fn grid_position_to_screen(
+    position: GridPosition,
+    rect: egui::Rect,
+    board_center: GridPosition,
+) -> egui::Pos2 {
+    let relative_q = (position.q - board_center.q) as f32;
+    let relative_r = (position.r - board_center.r) as f32;
+    let x = BOARD_HEX_RADIUS * SQRT_3 * (relative_q + (relative_r / 2.0));
+    let y = BOARD_HEX_RADIUS * 1.5 * relative_r;
+    egui::pos2(rect.center().x + x, rect.center().y + y)
+}
+
+fn screen_to_grid_position(
+    position: egui::Pos2,
+    rect: egui::Rect,
+    board_center: GridPosition,
+) -> GridPosition {
+    let local_x = position.x - rect.center().x;
+    let local_y = position.y - rect.center().y;
+    let q = ((SQRT_3 / 3.0) * local_x - (local_y / 3.0)) / BOARD_HEX_RADIUS;
+    let r = ((2.0 / 3.0) * local_y) / BOARD_HEX_RADIUS;
+    let rounded = round_axial_hex(q, r);
+    GridPosition::new(rounded.q + board_center.q, rounded.r + board_center.r)
+}
+
+fn round_axial_hex(q: f32, r: f32) -> GridPosition {
+    let s = -q - r;
+    let mut rounded_q = q.round();
+    let mut rounded_r = r.round();
+    let rounded_s = s.round();
+
+    let q_diff = (rounded_q - q).abs();
+    let r_diff = (rounded_r - r).abs();
+    let s_diff = (rounded_s - s).abs();
+
+    if q_diff > r_diff && q_diff > s_diff {
+        rounded_q = -rounded_r - rounded_s;
+    } else if r_diff > s_diff {
+        rounded_r = -rounded_q - rounded_s;
+    }
+
+    GridPosition::new(rounded_q as i32, rounded_r as i32)
+}
+
+fn hex_outline_points(center: egui::Pos2, radius: f32) -> Vec<egui::Pos2> {
+    let half_width = radius * (SQRT_3 / 2.0);
+    vec![
+        egui::pos2(center.x, center.y - radius),
+        egui::pos2(center.x + half_width, center.y - (radius * 0.5)),
+        egui::pos2(center.x + half_width, center.y + (radius * 0.5)),
+        egui::pos2(center.x, center.y + radius),
+        egui::pos2(center.x - half_width, center.y + (radius * 0.5)),
+        egui::pos2(center.x - half_width, center.y - (radius * 0.5)),
+    ]
+}
+
+fn token_initials(name: &str) -> String {
+    let initials = name
+        .split_whitespace()
+        .filter_map(|segment| segment.chars().next())
+        .take(2)
+        .collect::<String>();
+
+    if initials.is_empty() {
+        "?".to_string()
+    } else {
+        initials
+    }
+}
+
+fn format_grid_position(position: GridPosition) -> String {
+    format!("({}, {})", position.q, position.r)
+}
+
 /// Generates a deterministic die roll for the engine's runtime dice queue.
 ///
 /// The linear congruential generator keeps the implementation dependency-free, while rejection
@@ -605,8 +950,9 @@ fn roll_die(next_seed: &mut u32, sides: u16) -> u16 {
 #[cfg(test)]
 mod tests {
     use super::{
-        BattleMap, DiceLog, EnginePhase, GridKind, GridPosition, SaveState, SelectionState, Token,
-        TurnOrder, build_app, queue_dice_roll, queue_token_move,
+        BattleMap, BoardCommand, DiceLog, EnginePhase, GridKind, GridPosition, SaveState,
+        SelectionState, Token, TurnOrder, build_app, queue_board_command, queue_dice_roll,
+        queue_token_move,
     };
     use bevy::prelude::{App, Entity};
 
@@ -739,5 +1085,40 @@ mod tests {
             dice_log.resolved[1].total,
             i32::from(dice_log.resolved[1].rolls[0]) - 1
         );
+    }
+
+    #[test]
+    fn board_selection_commands_update_the_selected_token() {
+        let mut app = build_app();
+        app.update();
+
+        let goblin = entity_named(&mut app, "Goblin Skirmisher");
+        queue_board_command(&mut app, BoardCommand::Select(goblin));
+
+        app.update();
+
+        let selection = app.world().resource::<SelectionState>();
+        assert_eq!(selection.selected, Some(goblin));
+        assert_eq!(selection.last_moved_distance, 0);
+    }
+
+    #[test]
+    fn board_move_commands_route_the_selected_token_through_the_engine_queue() {
+        let mut app = build_app();
+        app.update();
+
+        let hero = entity_named(&mut app, "Seren");
+        queue_board_command(&mut app, BoardCommand::MoveSelectedTo(GridPosition::new(1, -1)));
+
+        app.update();
+
+        let selection = app.world().resource::<SelectionState>();
+        let save_state = app.world().resource::<SaveState>();
+        let position = app.world().entity(hero).get::<GridPosition>().unwrap();
+
+        assert_eq!(*position, GridPosition::new(1, -1));
+        assert_eq!(selection.selected, Some(hero));
+        assert_eq!(selection.last_moved_distance, 1);
+        assert!(save_state.dirty);
     }
 }
