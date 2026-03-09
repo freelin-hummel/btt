@@ -10,7 +10,17 @@ const LCG_MULTIPLIER: u32 = 1_664_525;
 const LCG_INCREMENT: u32 = 1_013_904_223;
 const BOARD_HEX_RADIUS: f32 = 28.0;
 const BOARD_VIEW_RADIUS: i32 = 4;
+const BOARD_VIEW_DISTANCE: u32 = BOARD_VIEW_RADIUS as u32;
 const SQRT_3: f32 = 1.732_050_8;
+const MIN_BOARD_HEIGHT: f32 = 320.0;
+const MAX_BOARD_HEIGHT: f32 = 460.0;
+const BOARD_CORNER_RADIUS: f32 = 18.0;
+const TOKEN_RADIUS_RATIO: f32 = 0.46;
+const TOKEN_NAME_OFFSET_RATIO: f32 = 0.92;
+const TOKEN_INITIALS_FONT_SIZE: f32 = 16.0;
+const TOKEN_NAME_FONT_SIZE: f32 = 13.0;
+const SELECTED_TOKEN_STROKE_WIDTH: f32 = 4.0;
+const UNSELECTED_TOKEN_STROKE_WIDTH: f32 = 2.0;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Resource)]
 pub enum EnginePhase {
@@ -424,7 +434,9 @@ fn render_btt_ui(
     egui::CentralPanel::default().show(ctx, |ui| {
         ui.heading("Board");
         ui.add_space(8.0);
-        ui.label("Click a token to select it, then click an open hex to move the selected token.");
+        ui.label(
+            "Click a token to select it, click another token to change selection, or click an empty hex to move the selected token.",
+        );
         ui.label(format!(
             "Hovered Hex: {}",
             presentation
@@ -441,13 +453,13 @@ fn render_btt_ui(
         ));
         ui.add_space(8.0);
 
-        let board_height = ui.available_height().min(460.0).max(320.0);
+        let board_height = ui.available_height().min(MAX_BOARD_HEIGHT).max(MIN_BOARD_HEIGHT);
         let (board_rect, board_response) = ui.allocate_exact_size(
             egui::vec2(ui.available_width(), board_height),
             egui::Sense::click(),
         );
         let painter = ui.painter_at(board_rect);
-        painter.rect_filled(board_rect, 18.0, egui::Color32::from_rgb(76, 59, 47));
+        painter.rect_filled(board_rect, BOARD_CORNER_RADIUS, board_background_color());
 
         let board_center = board_center_hex(selection.selected, &combatants);
         draw_board_tiles(
@@ -745,7 +757,7 @@ fn board_command_for_click(
 }
 
 fn board_is_visible(center: GridPosition, hex: GridPosition) -> bool {
-    center.distance_to(hex) <= BOARD_VIEW_RADIUS as u32
+    center.distance_to(hex) <= BOARD_VIEW_DISTANCE
 }
 
 fn draw_board_tiles(
@@ -764,10 +776,7 @@ fn draw_board_tiles(
             }
 
             let hex_center = grid_position_to_screen(hex, rect, board_center);
-            let fill = match presentation.hovered_hex {
-                Some(hovered) if hovered == hex => egui::Color32::from_rgb(120, 97, 80),
-                _ => egui::Color32::from_rgb(98, 77, 62),
-            };
+            let fill = hex_fill_color(matches!(presentation.hovered_hex, Some(hovered) if hovered == hex));
             painter.add(egui::Shape::convex_polygon(
                 hex_outline_points(hex_center, BOARD_HEX_RADIUS),
                 fill,
@@ -778,32 +787,59 @@ fn draw_board_tiles(
 
     for combatant in combatants {
         let center = grid_position_to_screen(combatant.position, rect, board_center);
-        let fill = match combatant.role {
-            TokenRole::Player => egui::Color32::from_rgb(61, 111, 176),
-            TokenRole::Npc => egui::Color32::from_rgb(173, 89, 42),
-        };
-        let stroke = if Some(combatant.entity) == selection.selected {
-            egui::Stroke::new(4.0, egui::Color32::from_rgb(255, 232, 154))
-        } else {
-            egui::Stroke::new(2.0, egui::Color32::from_rgb(244, 236, 223))
-        };
+        let fill = token_fill_color(combatant.role);
+        let stroke = token_stroke(Some(combatant.entity) == selection.selected);
+        let token_radius = BOARD_HEX_RADIUS * TOKEN_RADIUS_RATIO;
 
-        painter.circle_filled(center, BOARD_HEX_RADIUS * 0.46, fill);
-        painter.circle_stroke(center, BOARD_HEX_RADIUS * 0.46, stroke);
+        painter.circle_filled(center, token_radius, fill);
+        painter.circle_stroke(center, token_radius, stroke);
         painter.text(
             center,
             egui::Align2::CENTER_CENTER,
             token_initials(combatant.name),
-            egui::FontId::proportional(16.0),
+            egui::FontId::proportional(TOKEN_INITIALS_FONT_SIZE),
             egui::Color32::WHITE,
         );
         painter.text(
-            egui::pos2(center.x, center.y + BOARD_HEX_RADIUS * 0.92),
+            egui::pos2(center.x, center.y + BOARD_HEX_RADIUS * TOKEN_NAME_OFFSET_RATIO),
             egui::Align2::CENTER_TOP,
             combatant.name,
-            egui::FontId::proportional(13.0),
+            egui::FontId::proportional(TOKEN_NAME_FONT_SIZE),
             egui::Color32::from_rgb(247, 240, 226),
         );
+    }
+}
+
+fn board_background_color() -> egui::Color32 {
+    egui::Color32::from_rgb(76, 59, 47)
+}
+
+fn hex_fill_color(is_hovered: bool) -> egui::Color32 {
+    if is_hovered {
+        egui::Color32::from_rgb(120, 97, 80)
+    } else {
+        egui::Color32::from_rgb(98, 77, 62)
+    }
+}
+
+fn token_fill_color(role: TokenRole) -> egui::Color32 {
+    match role {
+        TokenRole::Player => egui::Color32::from_rgb(61, 111, 176),
+        TokenRole::Npc => egui::Color32::from_rgb(173, 89, 42),
+    }
+}
+
+fn token_stroke(is_selected: bool) -> egui::Stroke {
+    if is_selected {
+        egui::Stroke::new(
+            SELECTED_TOKEN_STROKE_WIDTH,
+            egui::Color32::from_rgb(255, 232, 154),
+        )
+    } else {
+        egui::Stroke::new(
+            UNSELECTED_TOKEN_STROKE_WIDTH,
+            egui::Color32::from_rgb(244, 236, 223),
+        )
     }
 }
 
