@@ -1,14 +1,14 @@
 # Tabletop
 
 ## Requirement: Bootstrap a playable tabletop session
-The system SHALL bootstrap into a running tabletop session with a hex grid map, an active round, and an initial token selection.
+The system SHALL bootstrap into a running tabletop session with an active map, an active round, and an initial token selection.
 
 #### Scenario: Initial session state is ready
 - GIVEN the application builds a fresh Bevy app
 - WHEN the app runs its startup and update cycle
 - THEN the engine phase is `Running`
-- AND the active map is the hex-grid "Ember Keep"
-- AND turn order contains two combatants
+- AND an active map is available
+- AND turn order contains combatants
 - AND a token is already selected
 
 ## Requirement: Board selection updates the active token summary
@@ -24,7 +24,7 @@ The system SHALL resolve queued movement commands by moving the targeted token a
 
 #### Scenario: Moving the selected token
 - GIVEN the app has a selected token on the board
-- WHEN a movement command queues a new hex destination for that token
+- WHEN a movement command queues a new board destination for that token
 - THEN the token ends at the requested grid position
 - AND the selection state records the measured move distance
 - AND the save state is marked dirty
@@ -32,8 +32,8 @@ The system SHALL resolve queued movement commands by moving the targeted token a
 ## Requirement: Queued dice rolls are recorded in history
 The system SHALL resolve queued dice rolls into the dice history log.
 
-#### Scenario: Rolling initiative
+#### Scenario: Rolling labeled dice
 - GIVEN the app has finished bootstrapping
-- WHEN an initiative roll queues two d6 dice with a modifier
+- WHEN a labeled dice roll queues one or more dice with a modifier
 - THEN a dice log entry is added to history
 - AND the entry preserves the roll label, rolled values, and total
