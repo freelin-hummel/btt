@@ -47,3 +47,14 @@ lightyear: A slightly more advanced networking crate that includes client-side p
 Worldbuilding requires robust saving of ECS states.
 
 moonshine_save: A powerful framework for saving and loading Bevy ECS entities and components. It allows the GM to save the exact state of a battlemap, the world data, or journal entries into files to be resumed later.
+
+Desktop run/debug workflow
+- `cargo run` launches the desktop window from the workspace root.
+- VS Code users can use the existing `cargo run` task for a manual launch or the `Debug BTT desktop app` launch configuration for an interactive debug session.
+
+Desktop smoke-test checklist
+- [ ] Launch the app with `cargo run` and confirm the BTT window opens and remains responsive.
+- [ ] Close the main window and confirm the process exits without leaving a headless background process.
+- [ ] Verify the board view renders both tokens with labels on the tabletop surface.
+- [ ] Click a token to change the active selection summary in the sidebar.
+- [ ] Click an open hex after selecting a token and confirm the token moves and the measured distance updates.
