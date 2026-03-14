@@ -1,1 +1,23 @@
-/* global reset handled in App.css */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+body {
+  overflow: hidden;
+  background: var(--color-background);
+}
+
+.app {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.canvas-wrapper {
+  position: fixed;
+  top: 49px;
+  right: 220px;
+  left: 0;
+  bottom: 0;
+}
