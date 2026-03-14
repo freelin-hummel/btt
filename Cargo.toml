@@ -1,8 +1,0 @@
-[package]
-name = "btt"
-version = "0.1.0"
-edition = "2024"
-
-[dependencies]
-bevy = { version = "0.15", default-features = false, features = ["bevy_asset", "bevy_color", "bevy_core_pipeline", "bevy_render", "bevy_window", "bevy_winit", "multi_threaded", "png", "x11"] }
-bevy_egui = "0.31.1"
