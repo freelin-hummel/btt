@@ -1,0 +1,143 @@
+.sidebar {
+  position: fixed;
+  top: 48px;
+  right: 0;
+  width: 200px;
+  bottom: 0;
+  background: #0f172a;
+  border-left: 1px solid #1e293b;
+  padding: 12px 10px;
+  overflow-y: auto;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  user-select: none;
+}
+
+.section h3 {
+  margin: 0 0 8px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #64748b;
+}
+
+.palette {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.swatch {
+  position: relative;
+  height: 44px;
+  border-radius: 6px;
+  border: 2px solid transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 2px;
+  transition: border-color 0.15s;
+}
+
+.swatchLabel {
+  font-size: 9px;
+  color: rgba(255,255,255,0.85);
+  text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+  text-transform: capitalize;
+}
+
+.colorSwatch {
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: border-color 0.15s, transform 0.15s;
+}
+
+.colorSwatch:hover {
+  transform: scale(1.1);
+}
+
+.activeSwatchBorder {
+  border-color: #facc15 !important;
+}
+
+.hint {
+  font-size: 11px;
+  color: #475569;
+  line-height: 1.5;
+}
+
+.tokenList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tokenItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px;
+  border-radius: 5px;
+  cursor: pointer;
+  background: #1e293b;
+  transition: background 0.15s;
+}
+
+.tokenItem:hover {
+  background: #334155;
+}
+
+.tokenItem.selected {
+  background: #1d4ed8;
+}
+
+.tokenDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.tokenName {
+  flex: 1;
+  font-size: 12px;
+  color: #e2e8f0;
+}
+
+.tokenCoord {
+  font-size: 10px;
+  color: #64748b;
+}
+
+.removeBtn {
+  background: none;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  font-size: 11px;
+  padding: 0 2px;
+  line-height: 1;
+}
+
+.removeBtn:hover {
+  color: #ef4444;
+}
+
+.helpList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 11px;
+  color: #475569;
+}
