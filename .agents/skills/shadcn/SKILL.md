@@ -25,6 +25,16 @@ The JSON above contains the project config and installed components. Use `npx sh
 3. **Use built-in variants before custom styles.** `variant="outline"`, `size="sm"`, etc.
 4. **Use semantic colors.** `bg-primary`, `text-muted-foreground` — never raw values like `bg-blue-500`.
 
+## BTT Project Directive (Required)
+
+- **Default to shadcn styling first for all UI.**
+- **Do not style per component** (no custom typography/color/spacing/padding/size overrides on shadcn components) unless **ABSOLUTELY NECESSARY**.
+- A change is **ABSOLUTELY NECESSARY** only when one of the following is true:
+  1. It is required to satisfy a functional layout/positioning constraint that cannot be expressed through existing shadcn composition or variants.
+  2. It is required for accessibility or interaction correctness.
+  3. It is required to preserve a shell-level structural contract (region placement, docking, overlay positioning).
+- If an exception is required, keep it minimal and place it on wrapper/layout elements whenever possible rather than on shadcn components.
+
 ## Critical Rules
 
 These rules are **always enforced**. Each links to a file with Incorrect/Correct code pairs.

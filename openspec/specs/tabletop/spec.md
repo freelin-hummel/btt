@@ -74,8 +74,8 @@ The system SHALL treat layout drag interactions as shell-owned behavior with poi
 - AND individual modules declare capabilities and placement rules rather than implementing incompatible drag systems
 - AND drag affordances remain consistent across base and extension-provided modules
 
-### Requirement: The shell supports a browser-oriented screen
-The system SHALL provide a browser-oriented screen for browsing rules, documents, assets, entities, or other library content with navigation or filters on the left, result browsing in the center, and the current entry in the right-side `selected` region.
+### Requirement: The shell supports browser-oriented workflows
+The system SHALL support browser-oriented workflows for browsing rules, documents, assets, entities, or other library content, either as a dedicated browser-oriented screen or as a transient workspace window layered over the center workspace.
 
 #### Scenario: Browser layout renders with structural regions
 - GIVEN the user opens a browser-oriented screen
@@ -85,6 +85,13 @@ The system SHALL provide a browser-oriented screen for browsing rules, documents
 - AND the center region contains the current list, canvas, browser, or document content
 - AND the right region contains `selected` entry details
 - AND no contextual `action_bar` is required unless the active workflow specifically needs one
+
+#### Scenario: Browser content can open as a transient window
+- GIVEN the user is in a scene-oriented workspace
+- WHEN the user opens browser-oriented content such as a compendium or document browser
+- THEN that content may appear as a transient workspace window over the center workspace
+- AND `menu` and docked side regions remain available
+- AND the window does not redefine the shell's top-level regions
 
 ### Requirement: The shell supports a scene-centered screen
 The system SHALL provide a scene-centered screen where the scene is the primary workspace and supporting information is arranged in docked companion regions.
