@@ -1,6 +1,11 @@
 # Tabletop Shell
 
-## Requirement: The application exposes a shared virtual tabletop shell
+## Purpose
+Define the shared virtual tabletop shell layout contract, region responsibilities, and extension model so core and extension-provided modules can compose consistently across screens and workflows.
+
+## Requirements
+
+### Requirement: The application exposes a shared virtual tabletop shell
 The system SHALL expose a shared virtual tabletop shell with a persistent top region, docked left and right side regions, a dominant center workspace, and an optional bottom action region for context-sensitive play.
 
 #### Scenario: Shared shell vocabulary remains consistent
@@ -12,7 +17,7 @@ The system SHALL expose a shared virtual tabletop shell with a persistent top re
 - AND the current focus summary region is identified as `selected`
 - AND the bottom region is identified as `action_bar` when contextual actions are available
 
-## Requirement: The top bar acts as a persistent shell header
+### Requirement: The top bar acts as a persistent shell header
 The system SHALL use the top region as a persistent shell header for screen switching, workspace status, and global tools instead of as screen-specific content.
 
 #### Scenario: Top shell header persists across screens
@@ -22,7 +27,7 @@ The system SHALL use the top region as a persistent shell header for screen swit
 - AND the top region may include global search, status, presence, or tool affordances
 - AND the destination screen's primary content remains outside the top region
 
-## Requirement: The shell uses stacked side panels
+### Requirement: The shell uses stacked side panels
 The system SHALL treat the left and right regions as stacked panel columns so each region can host multiple sections without changing the overall shell structure.
 
 #### Scenario: Side regions contain stacked sections
@@ -32,7 +37,7 @@ The system SHALL treat the left and right regions as stacked panel columns so ea
 - AND the center workspace remains visually primary
 - AND the shell does not introduce extra top-level layout columns beyond left, center, and right
 
-## Requirement: The shell supports dockable panel modules
+### Requirement: The shell supports dockable panel modules
 The system SHALL allow panel modules to occupy the left or right dock without changing the overall shell pattern.
 
 #### Scenario: A module occupies a docked panel region
@@ -42,7 +47,7 @@ The system SHALL allow panel modules to occupy the left or right dock without ch
 - AND the shell still preserves a dominant center workspace
 - AND the module can replace another side-panel module without changing the global shell structure
 
-## Requirement: The shell supports drag-driven layout composition
+### Requirement: The shell supports drag-driven layout composition
 The system SHALL support drag-driven layout composition for eligible modules so users can reorder docked panels and move them between supported shell regions without redefining the shell.
 
 #### Scenario: A user reorders modules within a dock
@@ -59,7 +64,7 @@ The system SHALL support drag-driven layout composition for eligible modules so 
 - AND the module keeps the same identity and state where possible
 - AND the move does not create new top-level layout regions outside the shared shell contract
 
-## Requirement: Drag interactions remain accessible and shell-owned
+### Requirement: Drag interactions remain accessible and shell-owned
 The system SHALL treat layout drag interactions as shell-owned behavior with pointer and keyboard access paths rather than as ad hoc per-module implementations.
 
 #### Scenario: Layout dragging uses a shared shell interaction model
@@ -69,7 +74,7 @@ The system SHALL treat layout drag interactions as shell-owned behavior with poi
 - AND individual modules declare capabilities and placement rules rather than implementing incompatible drag systems
 - AND drag affordances remain consistent across base and extension-provided modules
 
-## Requirement: The shell supports a browser-oriented screen
+### Requirement: The shell supports a browser-oriented screen
 The system SHALL provide a browser-oriented screen for browsing rules, documents, assets, entities, or other library content with navigation or filters on the left, result browsing in the center, and the current entry in the right-side `selected` region.
 
 #### Scenario: Browser layout renders with structural regions
@@ -81,7 +86,7 @@ The system SHALL provide a browser-oriented screen for browsing rules, documents
 - AND the right region contains `selected` entry details
 - AND no contextual `action_bar` is required unless the active workflow specifically needs one
 
-## Requirement: The shell supports a scene-centered screen
+### Requirement: The shell supports a scene-centered screen
 The system SHALL provide a scene-centered screen where the scene is the primary workspace and supporting information is arranged in docked companion regions.
 
 #### Scenario: Scene-centered layout renders with scene-first structure
@@ -93,7 +98,7 @@ The system SHALL provide a scene-centered screen where the scene is the primary 
 - AND the right region contains scene controls, layer tools, and `selected`
 - AND the bottom region contains `action_bar` when context-sensitive actions are available
 
-## Requirement: The left region hosts persistent utility panels
+### Requirement: The left region hosts persistent utility panels
 The system SHALL use the left region for stacked utility panels that support play, preparation, or browsing without displacing the main workspace.
 
 #### Scenario: Left stack supports tabletop workflows
@@ -103,7 +108,7 @@ The system SHALL use the left region for stacked utility panels that support pla
 - AND those sections remain secondary to `scene`
 - AND those sections do not replace the right-side `selected` inspector role
 
-## Requirement: The right region hosts persistent inspectors and tools
+### Requirement: The right region hosts persistent inspectors and tools
 The system SHALL use the right region for stacked inspector and control panels that describe current workspace state and current selection.
 
 #### Scenario: Right stack supports inspection and control
@@ -113,7 +118,7 @@ The system SHALL use the right region for stacked inspector and control panels t
 - AND `selected` remains the region responsible for the currently focused entity or object
 - AND the right region acts as the primary inspection column rather than a second workspace
 
-## Requirement: Selected content appears in the inspector
+### Requirement: Selected content appears in the inspector
 The system SHALL use `selected` as the persistent inspector for the current selection, including tokens, scene objects, browser entries, documents, or other selectable entities.
 
 #### Scenario: Selecting a scene entity populates the inspector
@@ -129,7 +134,7 @@ The system SHALL use `selected` as the persistent inspector for the current sele
 - THEN the right-side `selected` inspector shows the current entry details
 - AND the inspector adapts to the selected content type rather than forcing a single fixed schema
 
-## Requirement: Selection does not override inspector tab context
+### Requirement: Selection does not override inspector tab context
 The system SHALL treat the right dock as the owner of selection-aware inspection without forcing the active inspector tab or mode to switch when selection changes.
 
 #### Scenario: A selection-aware inspector tab updates in place
@@ -148,7 +153,7 @@ The system SHALL treat the right dock as the owner of selection-aware inspection
 - AND the journal tab preserves its own context
 - AND the shell does not force the right dock back to a character, token, or default `selected` tab
 
-## Requirement: Selection tools are distinct from the inspector
+### Requirement: Selection tools are distinct from the inspector
 The system SHALL treat quick actions, context menus, targeting flows, and other ephemeral controls as transient interaction surfaces distinct from the persistent `selected` inspector.
 
 #### Scenario: Contextual controls do not replace the inspector
@@ -164,7 +169,7 @@ The system SHALL treat quick actions, context menus, targeting flows, and other 
 - THEN the flow appears as a transient floating card, overlay, or modal surface
 - AND the persistent inspector can still describe the current selection while the action flow is active
 
-## Requirement: The bottom region is contextual rather than global
+### Requirement: The bottom region is contextual rather than global
 The system SHALL use the bottom region as a contextual action surface aligned with the active workspace rather than as a permanent global footer.
 
 #### Scenario: Action bar appears only when context requires it
@@ -176,7 +181,7 @@ The system SHALL use the bottom region as a contextual action surface aligned wi
 - THEN the bottom region contains `action_bar`
 - AND `action_bar` is used for contextual actions rather than persistent shell navigation
 
-## Requirement: Selected content follows current context
+### Requirement: Selected content follows current context
 The system SHALL use the `selected` region to show the currently focused entry, entity, or object instead of binding that region to a single content type.
 
 #### Scenario: Selected region updates between screens
@@ -186,7 +191,7 @@ The system SHALL use the `selected` region to show the currently focused entry, 
 - AND the `selected` region shows the current unit or scene object on the scene-oriented screen
 - AND the shell preserves the same inspector role even when the selected content type changes
 
-## Requirement: Inspector empty state depends on the active inspector mode
+### Requirement: Inspector empty state depends on the active inspector mode
 The system SHALL let the active inspector mode determine what appears when no entity is currently selected.
 
 #### Scenario: Inspector mode falls back appropriately
@@ -196,7 +201,7 @@ The system SHALL let the active inspector mode determine what appears when no en
 - THEN the right-side inspector shows a mode-specific fallback, summary, or empty state
 - AND the fallback remains consistent with the active inspector mode rather than forcing the previous selection to remain visible
 
-## Requirement: The shell supports transient workspace windows
+### Requirement: The shell supports transient workspace windows
 The system SHALL support transient windows layered over the center workspace for focused tasks such as reading documents, editing entities, reviewing inventory, or completing contextual workflows.
 
 #### Scenario: A focused window opens without replacing the shell layout
@@ -206,7 +211,7 @@ The system SHALL support transient windows layered over the center workspace for
 - AND the left and right docked panel structure remains recognizable underneath
 - AND the shell does not treat the focused window as a replacement for the persistent inspector column
 
-## Requirement: Layout specifications remain structural
+### Requirement: Layout specifications remain structural
 The system SHALL define high-level layout specifications in terms of regions, responsibilities, and extension points without embedding hardcoded visual styling instructions.
 
 #### Scenario: Layout language avoids styling commitments
@@ -216,7 +221,7 @@ The system SHALL define high-level layout specifications in terms of regions, re
 - AND it names responsibilities such as `menu`, `scene`, `selected`, and `action_bar`
 - AND it does not require colors, fonts, spacing scales, or component-library-specific structures
 
-## Requirement: The shell defines extension points for system-specific behavior
+### Requirement: The shell defines extension points for system-specific behavior
 The system SHALL provide an extension model so domain- or game-specific packages can add content, workflows, and UI modules without redefining the base shell contract.
 
 #### Scenario: A system extension contributes modules without replacing the shell
@@ -226,7 +231,7 @@ The system SHALL provide an extension model so domain- or game-specific packages
 - AND the shell retains the same base responsibilities for `menu`, side docks, center workspace, `selected`, and `action_bar`
 - AND the extension does not need to redefine the base shell layout to participate in it
 
-## Requirement: Extensions declare placement and capability metadata
+### Requirement: Extensions declare placement and capability metadata
 The system SHALL require extensions to declare where their modules can appear and what shell capabilities they require.
 
 #### Scenario: An extension declares placement rules
@@ -236,7 +241,7 @@ The system SHALL require extensions to declare where their modules can appear an
 - AND the module declares whether it provides browsing, inspection, authoring, communication, control, or action capabilities
 - AND the shell can place the module without introducing new top-level structural regions
 
-## Requirement: Extensions declare layout mobility metadata
+### Requirement: Extensions declare layout mobility metadata
 The system SHALL require extensions to declare whether their modules can be reordered, dragged across regions, or pinned to a fixed placement.
 
 #### Scenario: An extension declares drag and drop layout rules
@@ -246,7 +251,7 @@ The system SHALL require extensions to declare whether their modules can be reor
 - AND the module declares which destination regions are valid for drag relocation, if any
 - AND the shell can reject invalid drops without requiring extension-specific drag logic in the shell surface
 
-## Requirement: Extensions can contribute new entity and selection types
+### Requirement: Extensions can contribute new entity and selection types
 The system SHALL allow extensions to register new content types and define how those types participate in selection, inspection, and action flows.
 
 #### Scenario: An extension adds a new selectable entity type
@@ -256,7 +261,7 @@ The system SHALL allow extensions to register new content types and define how t
 - AND the extension can provide inspector content, summary data, and contextual actions for that type
 - AND the base shell still treats the result as part of the shared inspector model
 
-## Requirement: Extensions can contribute action providers
+### Requirement: Extensions can contribute action providers
 The system SHALL allow extensions to contribute context-sensitive actions without redefining the meaning of the bottom action region.
 
 #### Scenario: An extension contributes scene actions
@@ -266,7 +271,7 @@ The system SHALL allow extensions to contribute context-sensitive actions withou
 - AND those actions coexist with base or other extension-provided actions
 - AND the presence of extension actions does not convert `action_bar` into global navigation
 
-## Requirement: Extensions can contribute screens and workflows
+### Requirement: Extensions can contribute screens and workflows
 The system SHALL allow extensions to register system-specific screens, browser modes, editor modes, and transient workflows while preserving the base shell vocabulary.
 
 #### Scenario: An extension contributes a specialized workflow
@@ -276,7 +281,7 @@ The system SHALL allow extensions to register system-specific screens, browser m
 - AND the shell continues to expose the same top, side, center, and optional bottom responsibilities
 - AND the workflow can supply its own modules without redefining the shell's structural contract
 
-## Requirement: Extensions can compose rather than fork
+### Requirement: Extensions can compose rather than fork
 The system SHALL prefer additive composition so multiple extensions can coexist in one workspace without requiring mutually incompatible shell definitions.
 
 #### Scenario: Multiple extensions contribute modules together
@@ -286,7 +291,7 @@ The system SHALL prefer additive composition so multiple extensions can coexist 
 - AND region placement and inspector responsibilities remain consistent
 - AND no extension is required to replace the global shell in order to function
 
-## Requirement: The web shell standardizes on a shared drag engine
+### Requirement: The web shell standardizes on a shared drag engine
 The web implementation SHALL standardize shell-level drag-driven layout interactions on a single drag engine so extension modules target one integration contract.
 
 #### Scenario: Web layout drag behavior uses the shared drag engine
@@ -296,7 +301,7 @@ The web implementation SHALL standardize shell-level drag-driven layout interact
 - AND the current baseline integration for that drag engine is `dnd-kit`
 - AND extension modules integrate through shell metadata and placement contracts rather than by binding directly to the drag library surface
 
-## Requirement: The shell supports multiple source adapter types
+### Requirement: The shell supports multiple source adapter types
 The system SHALL support extension-provided source adapters so content can be imported from structured packages, schema-backed releases, markdown trees, and user-supplied data without redefining the shell.
 
 #### Scenario: An extension imports content from a supported source type
@@ -306,7 +311,7 @@ The system SHALL support extension-provided source adapters so content can be im
 - AND the shell continues to use the same selection, browsing, and inspector vocabulary after import
 - AND importing one source type does not require redefining how another system's source type is handled
 
-## Requirement: Imported content preserves source-native payloads
+### Requirement: Imported content preserves source-native payloads
 The system SHALL preserve source-native payloads alongside normalized records so imported content is not reduced to only the subset currently understood by shared UI features.
 
 #### Scenario: Unsupported source fields remain preserved
@@ -316,7 +321,7 @@ The system SHALL preserve source-native payloads alongside normalized records so
 - AND the extension can still interpret those fields later
 - AND import completeness does not depend on immediate support for every field in shared UI
 
-## Requirement: Imported content is stored in a canonical content graph
+### Requirement: Imported content is stored in a canonical content graph
 The system SHALL store imported material in a canonical content graph so content from different extensions can be searched, selected, inspected, related, and versioned through a shared platform model.
 
 #### Scenario: Imported records become canonical graph nodes
@@ -326,7 +331,7 @@ The system SHALL store imported material in a canonical content graph so content
 - AND each canonical node retains source provenance sufficient to identify its origin
 - AND relationships between imported records can be traversed without requiring direct access to the original source package
 
-## Requirement: Canonical content graph supports provenance and licensing metadata
+### Requirement: Canonical content graph supports provenance and licensing metadata
 The system SHALL retain provenance and licensing metadata for imported content so modules with different legal distribution models can coexist in one platform.
 
 #### Scenario: Imported content carries provenance and license metadata
@@ -336,7 +341,7 @@ The system SHALL retain provenance and licensing metadata for imported content s
 - AND the stored content records retain license or distribution metadata describing how the content may be used
 - AND the platform can distinguish between redistributable module content and user-supplied content
 
-## Requirement: Extensions can define system-owned schemas and validators
+### Requirement: Extensions can define system-owned schemas and validators
 The system SHALL allow extensions to register schemas and validators for their own content without forcing every system to adopt a single deeply semantic global schema.
 
 #### Scenario: A schema-backed extension validates its data
@@ -346,7 +351,7 @@ The system SHALL allow extensions to register schemas and validators for their o
 - AND validation failures can be reported without invalidating the base shell
 - AND the shell does not require all other extensions to share the same system-specific schema
 
-## Requirement: Extensions can choose their runtime depth
+### Requirement: Extensions can choose their runtime depth
 The system SHALL allow extensions to operate at different runtime depths ranging from reference-only browsing to full derived-state and action automation.
 
 #### Scenario: Extensions with different automation depth coexist
@@ -357,7 +362,7 @@ The system SHALL allow extensions to operate at different runtime depths ranging
 - AND the shell continues to host both through the same shared region vocabulary
 - AND the platform does not require every extension to implement the same level of automation
 
-## Requirement: Extensions can provide rules runtimes separate from ingestion
+### Requirement: Extensions can provide rules runtimes separate from ingestion
 The system SHALL treat rules and automation runtimes as distinct from source ingestion so a system can support reference content without requiring complete rules automation at import time.
 
 #### Scenario: Content import succeeds before full automation exists
