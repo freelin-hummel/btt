@@ -66,3 +66,17 @@ The system SHALL isolate structured persistence behind storage contracts and SHA
 - AND backend-specific query or client code is confined to adapter implementations
 - AND the migration primarily requires adapter and configuration changes rather than room logic rewrites
 - AND end-to-end parity validation confirms equivalent observable room outcomes across adapters
+
+## NEW UI Layout Requirements
+
+### Requirement: Tabletop Shell enforces generic VTT aesthetic
+The system SHALL present a modern generic Virtual Tabletop layout characterized by an OS-style menubar, an action bar overlay, and a dark default theme.
+
+#### Scenario: Shell layout maximizes the scene workspace
+- GIVEN the tabletop shell is loaded
+- WHEN the user interacts with the UI
+- THEN the top header is a traditional condensed OS-style Menubar (File, Edit, View styled navigation)
+- AND the primary interactable Action Bar floats bottom-centered over the scene
+- AND turn order operations occur without consuming side-panel screen real estate
+- AND the entire shell defaults to a dark mode `oklch` theme
+- AND UI components avoid excessive padding to ensure an ultracompact visual density
