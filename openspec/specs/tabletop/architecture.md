@@ -52,6 +52,36 @@ The shell owns cross-module layout orchestration, including drag-driven reorderi
 
 For the web client, the baseline shell drag engine is `dnd-kit`. Modules do not integrate with `dnd-kit` directly. Instead, they declare layout metadata that the shell maps onto the shared drag engine.
 
+### Realtime Multiplayer Layer
+
+The baseline backend stack for synchronous multiplayer is:
+
+- PartyKit room runtime for live room coordination
+- Cloudflare Durable Objects for room-adjacent coordination and sequencing boundaries when needed
+- D1 as the initial structured persistence backend
+- R2 for large immutable artifacts, room snapshots, and append-oriented event archives
+- Yjs for collaborative document-like state (notes, journals, planning surfaces, and other non-authoritative shared editing)
+
+This layer must preserve a strict separation between:
+
+- authoritative action/state flow (turn order, permissions, combat resolution, movement constraints, and similar game-critical state)
+- collaborative CRDT flow (shared editing and non-critical collaborative workspace state)
+
+Authoritative game state must not depend on CRDT convergence for correctness.
+
+### Persistence Boundary Layer
+
+Persistence is treated as a replaceable boundary rather than as direct usage of D1-specific APIs throughout the runtime.
+
+The platform should route storage and query operations through storage ports so the initial D1 backend can be replaced with another relational backend (for example Postgres) with minimal surface change.
+
+The baseline expectation is:
+
+- D1-backed adapter is the default implementation in the initial deployment
+- runtime services depend on storage contracts, not vendor SDK primitives
+- swapping persistence backends should primarily require a new adapter plus configuration changes
+- domain and room orchestration logic should remain unchanged when storage adapters are swapped
+
 ## Layout Composition Model
 
 Layout composition is a shell concern, not a module concern.
@@ -202,6 +232,19 @@ type ImportDiagnostic = {
 }
 ```
 
+### Authoritative Session Persistence
+
+Realtime play sessions should persist both replayability and recovery metadata.
+
+At minimum, persistence contracts should support:
+
+- session identity and membership metadata
+- append-oriented authoritative event records
+- periodic session snapshots for bounded replay and room recovery
+- references to large snapshot or archive objects in R2
+
+These responsibilities should remain stable regardless of the concrete relational backend.
+
 ### Normalization Principle
 
 Normalization should improve cross-system navigation and tooling, but the platform must never require that source-native semantics be flattened into a single lowest-common-denominator schema.
@@ -209,6 +252,28 @@ Normalization should improve cross-system navigation and tooling, but the platfo
 If a platform feature does not yet understand a field, the field remains preserved in the raw payload and import diagnostics rather than being discarded.
 
 ## Extension Contracts
+
+### Realtime Storage Port Definitions
+
+The architecture should keep realtime persistence backend-agnostic through explicit storage ports.
+
+```ts
+type RealtimeStoragePort = {
+  createSession(input: CreateSessionInput): Promise<SessionRecord>
+  getSession(sessionId: string): Promise<SessionRecord | null>
+  appendEvent(input: AppendEventInput): Promise<SessionEventRecord>
+  listEvents(input: ListSessionEventsInput): Promise<SessionEventRecord[]>
+  putSnapshot(input: PutSessionSnapshotInput): Promise<SessionSnapshotRecord>
+  getLatestSnapshot(sessionId: string): Promise<SessionSnapshotRecord | null>
+}
+
+type BlobArchivePort = {
+  putObject(input: PutBlobObjectInput): Promise<BlobObjectRecord>
+  getObjectRef(objectId: string): Promise<BlobObjectRecord | null>
+}
+```
+
+Concrete adapters (D1, Postgres, or others) must satisfy these contracts without changing higher-level room services.
 
 ### System Module Manifest
 

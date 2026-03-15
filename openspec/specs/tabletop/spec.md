@@ -372,3 +372,25 @@ The system SHALL treat rules and automation runtimes as distinct from source ing
 - THEN the imported content remains browsable, selectable, and inspectable
 - AND missing runtime behaviors do not prevent content storage or navigation
 - AND the extension can later add runtime features without changing the base shell contract
+
+### Requirement: The platform defines a baseline realtime backend stack
+The system SHALL define a baseline realtime backend stack for synchronous multiplayer composed of PartyKit for room connectivity, D1 for structured persistence, R2 for large object and snapshot storage, and Yjs for collaborative document-like state.
+
+#### Scenario: Baseline realtime responsibilities are partitioned
+- GIVEN a multiplayer room contains both game-critical actions and collaborative editing surfaces
+- WHEN backend responsibilities are assigned
+- THEN PartyKit room runtime handles realtime room connectivity and action fan-out
+- AND D1 stores structured session metadata and indexed event references
+- AND R2 stores snapshot and archive payloads that are large or append-oriented
+- AND Yjs is used for collaborative document-like state
+- AND game-critical authoritative state does not rely on CRDT convergence for correctness
+
+### Requirement: Structured persistence is backend-agnostic at the runtime boundary
+The system SHALL isolate structured persistence behind storage contracts so the initial D1 backend can be replaced with another relational backend with minimal domain-layer changes.
+
+#### Scenario: Swapping D1 for another relational backend preserves runtime services
+- GIVEN the realtime runtime uses storage contracts for session metadata, event appends, and snapshot indexing
+- WHEN the deployment replaces D1 with another relational backend implementation
+- THEN room and domain services continue to call the same storage contracts
+- AND backend-specific query or client code is confined to adapter implementations
+- AND the migration primarily requires adapter and configuration changes rather than room logic rewrites
