@@ -33,7 +33,6 @@ type DetailItem = {
 
 type DockSectionData = {
   id: string
-  label: string
   title: string
   rows: string[]
 }
@@ -135,19 +134,16 @@ const sceneEntities: DetailItem[] = [
 const leftDockSections: DockSectionData[] = [
   {
     id: "scene-roster",
-    label: "roster",
     title: "Party Roster",
     rows: ["Warden — Ready", "Mender — Channeling", "Scout — Hidden"],
   },
   {
     id: "scene-log",
-    label: "activity",
     title: "Activity Log",
     rows: ["Round 3 begins", "Rune Gate flickers", "Wolf closes distance"],
   },
   {
     id: "scene-chat",
-    label: "chat",
     title: "Chat",
     rows: ["GM: Fog thickens", "Mender: Holding action"],
   },
@@ -156,13 +152,11 @@ const leftDockSections: DockSectionData[] = [
 const rightDockSections: DockSectionData[] = [
   {
     id: "scene-tools",
-    label: "scene",
     title: "Scene Tools",
     rows: ["Lighting", "Terrain", "Layers", "Measure"],
   },
   {
     id: "layer-tools",
-    label: "layers",
     title: "Layer Tools",
     rows: ["Tokens", "Hazards", "Props", "Notes"],
   },
@@ -171,13 +165,11 @@ const rightDockSections: DockSectionData[] = [
 const compendiumSections: DockSectionData[] = [
   {
     id: "compendium-nav",
-    label: "compendium",
     title: "Navigation",
     rows: ["Rules", "Journals", "Assets", "Encounters"],
   },
   {
     id: "compendium-filters",
-    label: "filters",
     title: "Filters",
     rows: ["Recent", "GM notes", "Player-safe", "Imported"],
   },
@@ -232,16 +224,11 @@ function OverlayPanel({
   )
 }
 
-function DockSection({ label, title, rows }: DockSectionData) {
+function DockSection({ title, rows }: DockSectionData) {
   return (
     <section className="border-b border-border last:border-b-0">
       <div className="flex items-center justify-between border-b border-border bg-muted/45 px-3 py-2">
-        <div>
-          <p className="text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-            {label}
-          </p>
-          <h2 className="text-sm font-semibold">{title}</h2>
-        </div>
+        <h2 className="text-sm font-semibold">{title}</h2>
         <Sparkles aria-hidden="true" className="text-muted-foreground" />
       </div>
       <div className="flex flex-col gap-1 px-2 py-2">
@@ -494,12 +481,7 @@ export default function App() {
 
             <section className="border-t border-border">
               <div className="flex items-center justify-between border-b border-border bg-muted/45 px-3 py-2">
-                <div>
-                  <p className="text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-                    selected
-                  </p>
-                  <h2 className="text-sm font-semibold">Inspector</h2>
-                </div>
+                <h2 className="text-sm font-semibold">Inspector</h2>
                 <MessageSquare
                   aria-hidden="true"
                   className="text-muted-foreground"
@@ -625,12 +607,7 @@ export default function App() {
           <OverlayPanel className="flex h-full w-full overflow-hidden">
             <div className="flex flex-1 flex-col">
               <div className="flex items-center justify-between border-b border-border px-4 py-3">
-                <div>
-                  <p className="text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-                    compendium
-                  </p>
-                  <h2 className="text-sm font-semibold">Floating browser window</h2>
-                </div>
+                <h2 className="text-sm font-semibold">Compendium</h2>
                 <Button
                   aria-label="Close compendium"
                   size="icon-sm"
@@ -650,12 +627,7 @@ export default function App() {
 
                 <div className="min-h-0 overflow-auto border-r border-border">
                   <div className="flex items-center justify-between border-b border-border px-3 py-2">
-                    <div>
-                      <p className="text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-                        results
-                      </p>
-                      <h3 className="text-sm font-semibold">Entries</h3>
-                    </div>
+                    <h3 className="text-sm font-semibold">Entries</h3>
                   </div>
                   <div className="flex flex-col gap-2 p-3">
                     {compendiumEntries.map((entry) => {
@@ -694,12 +666,7 @@ export default function App() {
                 </div>
 
                 <div className="min-h-0 overflow-auto bg-background/60 p-4">
-                  <p className="text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-                    preview
-                  </p>
-                  <h3 className="mt-1 text-sm font-semibold">
-                    Focused compendium entry
-                  </h3>
+                  <h3 className="text-sm font-semibold">Focused compendium entry</h3>
                   <p className="mt-2 text-sm text-muted-foreground">
                     The compendium floats over the full-scene shell instead of
                     becoming a separate full-page workspace.
@@ -727,12 +694,7 @@ export default function App() {
       >
         <OverlayPanel className="px-4 py-3">
           <div className="flex flex-wrap items-center gap-3">
-            <div>
-              <p className="text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-                action_bar
-              </p>
-              <p className="text-sm font-semibold">Contextual combat actions</p>
-            </div>
+            <p className="text-sm font-semibold">Contextual combat actions</p>
 
             <div className="flex flex-wrap items-center gap-2">
               {sceneActionBarActions.map((action) => (
@@ -753,10 +715,7 @@ export default function App() {
         className="absolute z-20 max-w-xs px-4 py-3"
         style={{ right: rightDockContextOffset, top: compendiumTopOffset }}
       >
-        <p className="text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-          context
-        </p>
-        <h3 className="mt-1 text-sm font-semibold">Tactical prompts</h3>
+        <h3 className="text-sm font-semibold">Tactical prompts</h3>
         <ul className="mt-3 flex list-disc flex-col gap-2 pl-4 text-sm text-muted-foreground">
           {tacticalPrompts.map((prompt) => (
             <li key={prompt}>{prompt}</li>
@@ -774,14 +733,9 @@ export default function App() {
         >
           <OverlayPanel className="p-4">
             <div className="flex items-start justify-between gap-3 border-b border-border pb-3">
-              <div>
-                <p className="text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-                  transient window
-                </p>
-                <h3 className="text-sm font-semibold">
-                  {selectedItem?.title ?? "Focused content"}
-                </h3>
-              </div>
+              <h3 className="text-sm font-semibold">
+                {selectedItem?.title ?? "Focused content"}
+              </h3>
               <Button
                 aria-label="Close transient window"
                 size="icon-sm"
