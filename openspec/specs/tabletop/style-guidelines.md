@@ -172,6 +172,83 @@ Guidelines:
 - use animation primarily for clarity of state change, docking, expansion, and drag feedback
 - drag interactions should prioritize precision and drop-target clarity over flourish
 
+## 3D Scene Aesthetic
+
+3D scene rendering should follow a deliberately stylized low-fidelity aesthetic rather than aiming for modern realism.
+
+Primary reference points:
+
+- PlayStation-era low-poly rendering
+- classic RuneScape-style game-space readability
+- retro 3D scenes with strong silhouettes and simple material treatment
+
+The target is not strict nostalgia simulation. The goal is a readable, lightweight, intentionally constrained 3D look that feels game-like, authored, and slightly synthetic.
+
+### Core 3D Principles
+
+- favor low-poly silhouettes over dense geometric detail
+- prioritize readable forms at tabletop zoom levels
+- use simple, intentionally limited material response
+- prefer stylized scene clarity over realism, physically rich shading, or cinematic mood
+- keep rendering lightweight enough that many interactive scene elements can coexist without visual clutter
+
+### Geometry
+
+Guidelines:
+
+- models should read clearly from medium and distant camera positions
+- silhouettes should carry most of the visual identity
+- micro-detail should be avoided unless it survives tabletop viewing distance
+- props, tiles, and scene dressing should prefer blocky, readable forms
+
+### Materials and Textures
+
+Guidelines:
+
+- prefer flat, simple, or lightly shaded materials
+- texture work should be low-resolution or intentionally restrained in detail density
+- avoid noisy surface detail that blurs at gameplay distance
+- embrace limited texture precision and stylized sharpness where it helps the retro aesthetic
+- material variation should come from hue, value, and silhouette more than complex reflectance
+
+### Lighting
+
+Guidelines:
+
+- lighting should be clear and game-readable rather than cinematic
+- use lighting to separate walkable space, objects, and points of interaction
+- avoid heavy global illumination styling, filmic bloom, or realistic surface response as the default look
+- shadows should support spatial comprehension, not visual spectacle
+
+### Post-Processing
+
+Post-processing should be restrained and in service of the low-fidelity aesthetic.
+
+Guidelines:
+
+- prefer minimal post-processing by default
+- allow selective use of pixelation, affine-like instability, fog, color quantization, dithering, or similar retro cues only when they improve the intended look
+- avoid modern glossy pipelines dominated by depth of field, lens artifacts, aggressive bloom, or high-end cinematic grading
+
+### Color in 3D Space
+
+Guidelines:
+
+- use clear palette separation between ground, props, tokens, and interactive objects
+- prefer slightly exaggerated readability over naturalistic color behavior
+- reserve intense color accents for gameplay-significant objects, hazards, objectives, or selection states
+
+### What To Avoid In 3D
+
+Avoid the following as the default rendering direction:
+
+- realistic PBR-heavy environments
+- high-frequency material noise
+- ultra-dense meshes that only read up close
+- cinematic lighting pipelines designed for screenshots rather than play
+- heavily processed fantasy realism that fights tabletop legibility
+- visual complexity that makes tokens, paths, or interactables harder to identify
+
 ## What To Avoid
 
 Avoid the following patterns in shell, inspector, and editor surfaces:
