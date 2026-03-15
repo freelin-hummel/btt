@@ -181,6 +181,20 @@ const rightDockByWorkspace: Record<Workspace, DockSectionData[]> = {
   ],
 }
 
+const sceneMarkerPositions = {
+  warden: { top: "60%", left: "28%" },
+  "ember-wolf": { top: "36%", left: "58%" },
+  "rune-gate": { top: "20%", left: "42%" },
+} as const
+
+const tacticalPrompts = [
+  "Initiative: Round 3, players act first.",
+  "Ember Wolf threatens the northern path.",
+  "Rune Gate can be primed from the right dock.",
+]
+
+const sceneActionBarActions = ["Move", "Target", "Draw Steel!"]
+
 function DockSection({ label, title, rows }: DockSectionData) {
   return (
     <section className="border-b border-border last:border-b-0">
@@ -191,7 +205,7 @@ function DockSection({ label, title, rows }: DockSectionData) {
           </p>
           <h2 className="text-sm font-semibold">{title}</h2>
         </div>
-        <Sparkles className="text-muted-foreground" />
+        <Sparkles aria-hidden="true" className="text-muted-foreground" />
       </div>
       <div className="flex flex-col gap-1 px-2 py-2">
         {rows.map((row) => (
@@ -226,10 +240,12 @@ function StatRow({
 
 export default function App() {
   const [workspace, setWorkspace] = useState<Workspace>("scene")
-  const [browserSelection, setBrowserSelection] = useState<string>(
+  const [browserSelection, setBrowserSelection] = useState<string | null>(
     browserEntries[0].id,
   )
-  const [sceneSelection, setSceneSelection] = useState<string>(sceneEntities[0].id)
+  const [sceneSelection, setSceneSelection] = useState<string | null>(
+    sceneEntities[0].id,
+  )
   const [inspectorTab, setInspectorTab] = useState<InspectorTab>("selected")
   const [overlayOpen, setOverlayOpen] = useState(false)
 
@@ -243,7 +259,6 @@ export default function App() {
 
   const currentLeftDock = leftDockByWorkspace[workspace]
   const currentRightDock = rightDockByWorkspace[workspace]
-  const isSceneWorkspace = workspace === "scene"
 
   return (
     <main className="min-h-screen bg-background text-foreground">
@@ -274,7 +289,7 @@ export default function App() {
                   variant={workspace === "browser" ? "secondary" : "ghost"}
                   onClick={() => setWorkspace("browser")}
                 >
-                  <BookOpen data-icon="inline-start" />
+                  <BookOpen aria-hidden="true" data-icon="inline-start" />
                   Browser
                 </Button>
                 <Button
@@ -282,17 +297,17 @@ export default function App() {
                   variant={workspace === "scene" ? "secondary" : "ghost"}
                   onClick={() => setWorkspace("scene")}
                 >
-                  <Compass data-icon="inline-start" />
+                  <Compass aria-hidden="true" data-icon="inline-start" />
                   Scene
                 </Button>
               </div>
 
               <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
-                <Search />
+                <Search aria-hidden="true" />
                 Search shell
               </div>
               <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
-                <Users />
+                <Users aria-hidden="true" />
                 3 present
               </div>
             </div>
@@ -325,7 +340,7 @@ export default function App() {
                   variant="outline"
                   onClick={() => setOverlayOpen(true)}
                 >
-                  <WandSparkles data-icon="inline-start" />
+                  <WandSparkles aria-hidden="true" data-icon="inline-start" />
                   Open window
                 </Button>
               </div>
@@ -340,7 +355,10 @@ export default function App() {
                         </p>
                         <h3 className="text-sm font-semibold">Entries</h3>
                       </div>
-                      <FolderTree className="text-muted-foreground" />
+                      <FolderTree
+                        aria-hidden="true"
+                        className="text-muted-foreground"
+                      />
                     </div>
                     <div className="flex flex-col gap-2 p-3">
                       {browserEntries.map((entry) => {
@@ -367,7 +385,10 @@ export default function App() {
                                   {entry.subtitle}
                                 </p>
                               </div>
-                              <Shield className="text-muted-foreground" />
+                              <Shield
+                                aria-hidden="true"
+                                className="text-muted-foreground"
+                              />
                             </div>
                             <p className="mt-2 text-sm text-muted-foreground">
                               {entry.summary}
@@ -410,18 +431,25 @@ export default function App() {
                         </p>
                         <h3 className="text-sm font-semibold">Ember Crossing</h3>
                       </div>
-                      <Layers className="text-muted-foreground" />
+                      <Layers aria-hidden="true" className="text-muted-foreground" />
                     </div>
-                    <div className="relative h-full bg-[radial-gradient(circle_at_top,_var(--color-muted),_var(--color-card)_50%,_var(--color-background))]">
+                    <div
+                      className="relative h-full"
+                      style={{
+                        backgroundImage:
+                          "radial-gradient(circle at top, var(--muted), var(--card) 50%, var(--background))",
+                      }}
+                    >
                       <button
                         type="button"
                         onClick={() => setSceneSelection("warden")}
                         className={cn(
-                          "absolute top-[60%] left-[28%] rounded-full border px-3 py-2 text-xs font-semibold shadow-sm transition-colors",
+                          "absolute rounded-full border px-3 py-2 text-xs font-semibold shadow-sm transition-colors",
                           sceneSelection === "warden"
                             ? "border-primary bg-primary/15"
                             : "border-border bg-card hover:bg-muted",
                         )}
+                        style={sceneMarkerPositions.warden}
                       >
                         Warden
                       </button>
@@ -429,11 +457,12 @@ export default function App() {
                         type="button"
                         onClick={() => setSceneSelection("ember-wolf")}
                         className={cn(
-                          "absolute top-[36%] left-[58%] rounded-full border px-3 py-2 text-xs font-semibold shadow-sm transition-colors",
+                          "absolute rounded-full border px-3 py-2 text-xs font-semibold shadow-sm transition-colors",
                           sceneSelection === "ember-wolf"
                             ? "border-primary bg-primary/15"
                             : "border-border bg-card hover:bg-muted",
                         )}
+                        style={sceneMarkerPositions["ember-wolf"]}
                       >
                         Ember Wolf
                       </button>
@@ -441,11 +470,12 @@ export default function App() {
                         type="button"
                         onClick={() => setSceneSelection("rune-gate")}
                         className={cn(
-                          "absolute top-[20%] left-[42%] rounded-full border px-3 py-2 text-xs font-semibold shadow-sm transition-colors",
+                          "absolute rounded-full border px-3 py-2 text-xs font-semibold shadow-sm transition-colors",
                           sceneSelection === "rune-gate"
                             ? "border-primary bg-primary/15"
                             : "border-border bg-card hover:bg-muted",
                         )}
+                        style={sceneMarkerPositions["rune-gate"]}
                       >
                         Rune Gate
                       </button>
@@ -459,11 +489,11 @@ export default function App() {
                     <h3 className="mt-1 text-sm font-semibold">
                       Tactical prompts
                     </h3>
-                    <div className="mt-3 flex flex-col gap-2 text-sm text-muted-foreground">
-                      <p>• Initiative: Round 3, players act first.</p>
-                      <p>• Ember Wolf threatens the northern path.</p>
-                      <p>• Rune Gate can be primed from the right dock.</p>
-                    </div>
+                    <ul className="mt-3 flex list-disc flex-col gap-2 pl-4 text-sm text-muted-foreground">
+                      {tacticalPrompts.map((prompt) => (
+                        <li key={prompt}>{prompt}</li>
+                      ))}
+                    </ul>
                   </div>
                 </div>
               )}
@@ -480,11 +510,12 @@ export default function App() {
                       </h3>
                     </div>
                     <Button
+                      aria-label="Close transient window"
                       size="icon-sm"
                       variant="ghost"
                       onClick={() => setOverlayOpen(false)}
                     >
-                      <X />
+                      <X aria-hidden="true" />
                     </Button>
                   </div>
                   <div className="mt-4 flex flex-col gap-3 text-sm text-muted-foreground">
@@ -516,7 +547,10 @@ export default function App() {
                   </p>
                   <h2 className="text-sm font-semibold">Inspector</h2>
                 </div>
-                <MessageSquare className="text-muted-foreground" />
+                <MessageSquare
+                  aria-hidden="true"
+                  className="text-muted-foreground"
+                />
               </div>
 
               <div className="border-b border-border p-2">
@@ -584,11 +618,11 @@ export default function App() {
                           variant="ghost"
                           onClick={() => {
                             if (workspace === "browser") {
-                              setBrowserSelection("")
+                              setBrowserSelection(null)
                               return
                             }
 
-                            setSceneSelection("")
+                            setSceneSelection(null)
                           }}
                         >
                           Clear selection
@@ -625,7 +659,7 @@ export default function App() {
           </aside>
         </div>
 
-        {isSceneWorkspace ? (
+        {workspace === "scene" ? (
           <footer
             className="border-t border-border bg-card"
             data-region="action_bar"
@@ -639,13 +673,15 @@ export default function App() {
               </div>
 
               <div className="flex flex-wrap items-center gap-2">
-                <Button size="sm" variant="secondary">
-                  Move
-                </Button>
-                <Button size="sm" variant="secondary">
-                  Target
-                </Button>
-                <Button size="sm">Draw Steel!</Button>
+                {sceneActionBarActions.map((action) => (
+                  <Button
+                    key={action}
+                    size="sm"
+                    variant={action === "Draw Steel!" ? "default" : "secondary"}
+                  >
+                    {action}
+                  </Button>
+                ))}
               </div>
             </div>
           </footer>
