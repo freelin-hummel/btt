@@ -16,8 +16,11 @@ This change defines:
 3. Recovery and replay validations using snapshot + event history.
 4. Adapter parity validations for persistence contract behavior.
 5. Baseline SLO-style acceptance thresholds for room responsiveness and recovery.
+6. Reviewable planning artifacts for this workflow slice: a delta spec, design notes, a requirement-to-scenario traceability matrix, and vertically staged tasks.
 
 This change does **not** implement production runtime code or lock in a specific E2E test framework.
+
+This change remains scoped to one workflow slice: validating realtime room behavior end to end across authoritative actions, collaborative editing, recovery, and storage-adapter swaps.
 
 ## User-visible outcomes
 - Multiplayer room behavior is validated for deterministic authoritative state under concurrent clients.
@@ -40,3 +43,5 @@ This change does **not** implement production runtime code or lock in a specific
 - OpenSpec tasks define traceable E2E acceptance criteria for each critical realtime slice.
 - Acceptance criteria cover happy path + conflict path + recovery path + adapter parity path.
 - The plan is executable incrementally in vertical slices.
+- Every critical behavior named in proposal or design is reflected in the delta spec, not only in supporting notes.
+- The change folder contains a checked-in traceability artifact that shows which scenarios satisfy which canonical realtime requirements.
