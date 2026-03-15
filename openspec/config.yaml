@@ -4,7 +4,7 @@ context: |
   Tech stack: web-based virtual tabletop in active transition; runtime UI stack is not finalized yet.
   Product direction: a generic VTT shell with an extension model that can host system-specific modules such as Lancer, Daggerheart, Cairn, or GURPS.
   Scene technology choice: use React Three Fiber (`@react-three/fiber`) for scene workspace rendering unless a later change replaces that decision.
-  Visual references currently in the repo root: compendium.png and main.png.
+  Visual references currently in the repo: reference/view-compendium.png and reference/main.png.
   Treat layout as structural only: regions, responsibilities, visibility, and relationships.
   Avoid hardcoding visual styling, typography, spacing scales, or implementation-library details in specs.
   Preferred shared region vocabulary: menu, scene, selected, action_bar.

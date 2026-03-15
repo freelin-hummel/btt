@@ -2,7 +2,7 @@
 
 ## Scope
 
-This document maps the packaged reference app's observable UI surface area into the generic VTT shell defined in [spec.md](/Users/free/src/btt/openspec/specs/tabletop/spec.md) and the extension model defined in [architecture.md](/Users/free/src/btt/openspec/specs/tabletop/architecture.md).
+This document maps the packaged reference app's observable UI surface area into the generic VTT shell defined in [spec.md](./spec.md) and the extension model defined in [architecture.md](./architecture.md).
 
 The reference app was inspected from packaged resources under `reference/Contents`. The mapping below is therefore based on concrete module names, document macros, icons, and authored content workflows present in the shipped build, not on source code.
 
@@ -149,7 +149,7 @@ System modules should be allowed to contribute theme overlays for:
 - document callouts and chapter styling
 - token frame or portrait frame packs
 
-These overlays should plug into the shared token contract from [architecture.md](/Users/free/src/btt/openspec/specs/tabletop/architecture.md) rather than introducing custom layout regions.
+These overlays should plug into the shared token contract from [architecture.md](./architecture.md) rather than introducing custom layout regions.
 
 ### Content art versus theming
 
