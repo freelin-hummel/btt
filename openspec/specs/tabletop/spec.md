@@ -129,6 +129,25 @@ The system SHALL use `selected` as the persistent inspector for the current sele
 - THEN the right-side `selected` inspector shows the current entry details
 - AND the inspector adapts to the selected content type rather than forcing a single fixed schema
 
+## Requirement: Selection does not override inspector tab context
+The system SHALL treat the right dock as the owner of selection-aware inspection without forcing the active inspector tab or mode to switch when selection changes.
+
+#### Scenario: A selection-aware inspector tab updates in place
+- GIVEN the user has a character-oriented inspector tab active in the right dock
+- AND that tab is designed to show the current selection
+- WHEN the user selects a different token or entity
+- THEN the active inspector tab remains the character-oriented tab
+- AND the tab updates to show details for the newly selected entity
+- AND the shell does not switch to a different inspector tab solely because selection changed
+
+#### Scenario: A non-selection inspector tab keeps its context
+- GIVEN the user has a journal-oriented inspector tab active in the right dock
+- AND that tab is not bound to the current token or entity selection
+- WHEN the user selects a token or other scene entity
+- THEN the right dock remains on the journal-oriented inspector tab
+- AND the journal tab preserves its own context
+- AND the shell does not force the right dock back to a character, token, or default `selected` tab
+
 ## Requirement: Selection tools are distinct from the inspector
 The system SHALL treat quick actions, context menus, targeting flows, and other ephemeral controls as transient interaction surfaces distinct from the persistent `selected` inspector.
 

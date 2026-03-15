@@ -66,6 +66,8 @@ Modules may declare:
 
 The shell resolves those declarations into a concrete drag-and-drop model, validates drops, preserves layout state, and ensures accessibility behavior remains consistent across modules from different systems.
 
+Inspector state is also shell-owned. The right dock owns selection-aware inspection, but the shell must preserve the active inspector tab or mode unless the user changes it or the active mode explicitly declares that it follows selection.
+
 ### Layout Mobility Contract
 
 ```ts
@@ -270,6 +272,7 @@ type UIProviderDefinition = {
   entityKinds?: string[]
   workflowKinds?: string[]
   layoutMobility?: LayoutMobilityDefinition
+  followsSelection?: boolean
 }
 ```
 
