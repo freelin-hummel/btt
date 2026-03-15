@@ -98,7 +98,7 @@ For the web client:
 
 Theming is a cross-cutting presentation concern that sits beside the shell and UI provider layers rather than inside the rules runtime.
 
-The base shell should follow the compact tool-density guidance in [style-guidelines.md](/Users/free/src/btt/openspec/specs/tabletop/style-guidelines.md), with an ultra-compact default presentation for docks, inspectors, toolbars, and editor surfaces.
+The base shell should follow the compact tool-density guidance in [style-guidelines.md](./style-guidelines.md), with an ultra-compact default presentation for docks, inspectors, toolbars, and editor surfaces.
 
 That same guidance also defines the baseline 3D scene art direction: stylized low-fidelity rendering with PSX-era and classic RuneScape-like readability, rather than modern realism.
 
