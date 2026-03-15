@@ -234,7 +234,7 @@ function BrowserWorkspace() {
     <section className="flex h-full min-h-0 flex-col rounded-md border border-border/70 bg-card">
       <header className="flex items-center justify-between border-b border-border/70 px-3 py-2">
         <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-muted-foreground">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
             Browser Workspace
           </p>
           <h2 className="text-sm font-semibold">Rules and content search</h2>
@@ -283,7 +283,7 @@ function SceneWorkspace() {
     >
       <header className="flex items-center justify-between border-b border-border/70 px-3 py-2">
         <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-muted-foreground">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
             Scene Workspace
           </p>
           <h2 className="text-sm font-semibold">Gatehouse Ambush</h2>
@@ -404,7 +404,7 @@ export function ShellLayout() {
       const oldIndex = items.indexOf(active.id)
       const newIndex = getInsertionIndex(sourceDock, items, over.id)
 
-      if (oldIndex === -1 || newIndex === -1 || oldIndex === newIndex) {
+      if (oldIndex === -1 || oldIndex === newIndex) {
         return
       }
 
@@ -427,11 +427,15 @@ export function ShellLayout() {
     const targetIndex = getInsertionIndex(targetDock, targetItems, over.id)
     targetItems.splice(targetIndex, 0, active.id)
 
-    updateLayout({
-      left: sourceDock === "left" ? sourceItems : targetDock === "left" ? targetItems : activeLayout.left,
-      right:
-        sourceDock === "right" ? sourceItems : targetDock === "right" ? targetItems : activeLayout.right,
-    })
+    const nextLayout: DockLayout = {
+      left: activeLayout.left,
+      right: activeLayout.right,
+    }
+
+    nextLayout[sourceDock] = sourceItems
+    nextLayout[targetDock] = targetItems
+
+    updateLayout(nextLayout)
   }
 
   function renderPanel(panelId: PanelId) {
@@ -482,7 +486,7 @@ export function ShellLayout() {
         >
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-muted-foreground">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
                 Tabletop Shell
               </p>
               <h1 className="text-sm font-semibold">Baseline layout</h1>
