@@ -1,0 +1,26 @@
+schema: spec-driven
+
+context: |
+  Tech stack: web-based virtual tabletop in active transition; runtime UI stack is not finalized yet.
+  Product direction: a generic VTT shell with an extension model that can host system-specific modules such as Lancer, Daggerheart, Cairn, or GURPS.
+  Scene technology choice: use React Three Fiber (`@react-three/fiber`) for scene workspace rendering unless a later change replaces that decision.
+  Visual references currently in the repo root: compendium.png and main.png.
+  Treat layout as structural only: regions, responsibilities, visibility, and relationships.
+  Avoid hardcoding visual styling, typography, spacing scales, or implementation-library details in specs.
+  Preferred shared region vocabulary: menu, scene, selected, action_bar.
+
+rules:
+  proposal:
+    - Keep each proposal scoped to one screen, workflow, or interaction slice.
+    - Name changes in kebab-case and describe the user-visible result first.
+  specs:
+    - Write requirements as observable behavior, not implementation detail.
+    - Reuse the shared shell vocabulary: top, left, center, right, bottom, menu, scene, selected, action_bar.
+    - Distinguish browser-oriented behavior from scene-oriented behavior.
+  design:
+    - Use React Three Fiber for scene rendering and interaction layers unless a change explicitly replaces that decision.
+    - Stay framework-agnostic for non-scene UI unless a change explicitly commits to a library.
+    - Describe layout composition in terms of regions and responsibilities.
+  tasks:
+    - Break work into small vertical slices that can be validated independently.
+    - Include validation steps appropriate to the eventual frontend stack once that stack exists.
