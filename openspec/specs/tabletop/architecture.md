@@ -48,6 +48,50 @@ System runtimes interpret normalized and source-native data to provide system-sp
 
 UI providers register system-specific compendium views, inspectors, builders, editors, and action surfaces into the base shell.
 
+The shell owns cross-module layout orchestration, including drag-driven reordering and movement of eligible modules between supported regions.
+
+For the web client, the baseline shell drag engine is `dnd-kit`. Modules do not integrate with `dnd-kit` directly. Instead, they declare layout metadata that the shell maps onto the shared drag engine.
+
+## Layout Composition Model
+
+Layout composition is a shell concern, not a module concern.
+
+Modules may declare:
+
+- the regions in which they may appear
+- whether they may be reordered within a region
+- whether they may move across regions
+- whether they may detach into transient overlay workflows
+- whether they are fixed or required for a given workspace mode
+
+The shell resolves those declarations into a concrete drag-and-drop model, validates drops, preserves layout state, and ensures accessibility behavior remains consistent across modules from different systems.
+
+### Layout Mobility Contract
+
+```ts
+type LayoutMobilityDefinition = {
+  defaultPlacement: "left" | "right" | "center" | "overlay" | "bottom"
+  allowedPlacements: Array<"left" | "right" | "center" | "overlay" | "bottom">
+  reorderableWithinPlacement: boolean
+  crossPlacementDraggable: boolean
+  detachable?: boolean
+  pinned?: boolean
+}
+```
+
+Pinned modules may still participate in shell rendering order, but they are not draggable by the user unless the workspace explicitly unlocks them.
+
+### Drag Engine Boundary
+
+The drag engine is an implementation detail of the shell adapter for a given client platform.
+
+For the web client:
+
+- `dnd-kit` is the standard drag engine for shell-level layout composition
+- shell sensors, collision detection, keyboard interactions, and drag overlays are provided centrally
+- modules should not import drag primitives just to participate in shell layout movement
+- module authors target manifest metadata and shell callback contracts instead of library-specific APIs
+
 ## Theming Model
 
 Theming is a cross-cutting presentation concern that sits beside the shell and UI provider layers rather than inside the rules runtime.
@@ -225,6 +269,7 @@ type UIProviderDefinition = {
   capabilities: string[]
   entityKinds?: string[]
   workflowKinds?: string[]
+  layoutMobility?: LayoutMobilityDefinition
 }
 ```
 

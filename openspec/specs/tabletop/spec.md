@@ -42,6 +42,33 @@ The system SHALL allow panel modules to occupy the left or right dock without ch
 - AND the shell still preserves a dominant center workspace
 - AND the module can replace another side-panel module without changing the global shell structure
 
+## Requirement: The shell supports drag-driven layout composition
+The system SHALL support drag-driven layout composition for eligible modules so users can reorder docked panels and move them between supported shell regions without redefining the shell.
+
+#### Scenario: A user reorders modules within a dock
+- GIVEN more than one dockable module is visible in a side region
+- WHEN the user drags a module to a new position within that region
+- THEN the shell reorders the stacked modules in that dock
+- AND the dock remains part of the same left or right shell region
+- AND the center workspace remains structurally dominant
+
+#### Scenario: A user moves a module between supported regions
+- GIVEN a module declares that it can appear in more than one shell region
+- WHEN the user drags that module from one supported region to another
+- THEN the shell moves the module into the destination region
+- AND the module keeps the same identity and state where possible
+- AND the move does not create new top-level layout regions outside the shared shell contract
+
+## Requirement: Drag interactions remain accessible and shell-owned
+The system SHALL treat layout drag interactions as shell-owned behavior with pointer and keyboard access paths rather than as ad hoc per-module implementations.
+
+#### Scenario: Layout dragging uses a shared shell interaction model
+- GIVEN multiple modules from different extensions participate in drag-driven layout
+- WHEN the user starts a reorder or relocation interaction
+- THEN the shell supplies the drag sensors, focus handling, collision rules, and drop validation
+- AND individual modules declare capabilities and placement rules rather than implementing incompatible drag systems
+- AND drag affordances remain consistent across base and extension-provided modules
+
 ## Requirement: The shell supports a browser-oriented screen
 The system SHALL provide a browser-oriented screen for browsing rules, documents, assets, entities, or other library content with navigation or filters on the left, result browsing in the center, and the current entry in the right-side `selected` region.
 
@@ -190,6 +217,16 @@ The system SHALL require extensions to declare where their modules can appear an
 - AND the module declares whether it provides browsing, inspection, authoring, communication, control, or action capabilities
 - AND the shell can place the module without introducing new top-level structural regions
 
+## Requirement: Extensions declare layout mobility metadata
+The system SHALL require extensions to declare whether their modules can be reordered, dragged across regions, or pinned to a fixed placement.
+
+#### Scenario: An extension declares drag and drop layout rules
+- GIVEN an extension registers a module
+- WHEN the shell evaluates that module's layout metadata
+- THEN the module declares whether it is reorderable within a region
+- AND the module declares which destination regions are valid for drag relocation, if any
+- AND the shell can reject invalid drops without requiring extension-specific drag logic in the shell surface
+
 ## Requirement: Extensions can contribute new entity and selection types
 The system SHALL allow extensions to register new content types and define how those types participate in selection, inspection, and action flows.
 
@@ -229,6 +266,16 @@ The system SHALL prefer additive composition so multiple extensions can coexist 
 - THEN modules from multiple extensions can coexist in the same workspace
 - AND region placement and inspector responsibilities remain consistent
 - AND no extension is required to replace the global shell in order to function
+
+## Requirement: The web shell standardizes on a shared drag engine
+The web implementation SHALL standardize shell-level drag-driven layout interactions on a single drag engine so extension modules target one integration contract.
+
+#### Scenario: Web layout drag behavior uses the shared drag engine
+- GIVEN the web client exposes drag-driven layout composition
+- WHEN shell layout dragging is implemented
+- THEN the shell uses a shared drag engine rather than per-module drag libraries
+- AND the current baseline integration for that drag engine is `dnd-kit`
+- AND extension modules integrate through shell metadata and placement contracts rather than by binding directly to the drag library surface
 
 ## Requirement: The shell supports multiple source adapter types
 The system SHALL support extension-provided source adapters so content can be imported from structured packages, schema-backed releases, markdown trees, and user-supplied data without redefining the shell.
